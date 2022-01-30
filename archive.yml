@@ -1,10 +1,9 @@
-Posts:
- - Slug: "bienvenido"
-   Id: 1
-   Resume:
-    Bienvenido a IOKode!
+- Slug: "bienvenido"
+  Id: 1
+  Resume:
+   Bienvenido a IOKode!
 
- - Slug: "largo"
-   Id: 6
-   Resume:
+- Slug: "largo"
+  Id: 6
+  Resume:
     Post largo para probar algunas cosillas.
