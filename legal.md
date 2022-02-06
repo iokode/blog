@@ -1,6 +1,6 @@
 # Propiedad del sitio web
 
-Este sitio web es propiedad de Ivan Montilla, con DNI 49.180.226-Q.
+Este sitio web es propiedad de Ivan Montilla, resiendente en España y con DNI 49180226-Q.
 
 # Propiedad de las imágenes alojadas
 
