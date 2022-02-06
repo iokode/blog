@@ -1,6 +1,7 @@
 # Propiedad del sitio web
 
-Este sitio web es propiedad de Ivan Montilla, resiendente en España y con DNI 49180226-Q.
+Este sitio web es propiedad de Ivan Montilla, resiendente en España.
+- **DNI**: 49.180.226-Q
 - **Establecimiento**: Calle Túria 53 Bajo izquierda, Valencia 46008. España
 - **Dirección de correo electrónico**: <ivan@iokode.blog>
 
