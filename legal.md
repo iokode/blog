@@ -23,4 +23,4 @@ Este sitio web no posee formulario de contacto, y por lo tanto el usuario no int
 sus datos personales.
 
 Como forma de registro técnico, el servidor almacena la dirección IP,
-fecha y hora de cada petición.
+fecha y hora de cada petición. Estos datos no serán compartidos con nadie.
