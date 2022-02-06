@@ -15,8 +15,7 @@ El nombre VADAVO y las imágenes que conforman su logotipo, son
 propiedas de VADAVO SOLUCIONES SL, y su uso está prohibido sin autorización.
 
 # Política de cookies
-Este sitio web utiliza [cookies](https://developer.mozilla.org/es/docs/Web/HTTP/Cookies)
-propias únicamente para mantener la paginación de comentarios.
+Este sitio web no utiliza cookies.
 
 # Política de privacidad
 Este sitio web no posee formulario de contacto, y por lo tanto el usuario no introducirá
