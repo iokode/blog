@@ -1,12 +1,8 @@
-- Slug: "me-siento-bien"
-  Number: 9
+- Slug: "hola"
+  Number: 10
   Resume:
-    Me siento muy bien, demasiado :D
+    Bienvenido a IOKode, esta es la primera entrada de este blog, habrá que estrenarlo con una bienvenida, ¿no?
 
-- Slug: "largo"
-  Number: 6
-  Resume:
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-    Pellentesque tincidunt tristique augue, eget rhoncus mi efficitur vel. Integer elementum,
-    
-    tellus eu gravida pellentesque, <strong>erat</strong> augue iaculis dolor, scelerisque elementum leo nibh non dolor. Nam volutpat leo vel pretium commodo. Integer sit amet fringilla ipsum. In sagittis magna vel volutpat imperdiet. Sed sed pulvinar magna. Donec sit amet eros non tellus placerat dignissim. Sed vel turpis eu tellus porttitor fermentum. In vitae ullamcorper ipsum. Duis fringilla finibus erat, sit amet tincidunt orci eleifend in.
+    Este blog trata principalmente sobre desarrollo de software, y el contenido será desde post puramente técnicos,
+    pasando por mis propias reflexiones y opiniones personales, hasta documentar desafíos con los que me he encontrado
+    y como me he enfrentado a ellos hasta solucionar problemas.
