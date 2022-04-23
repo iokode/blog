@@ -6,3 +6,11 @@
     Este blog trata principalmente sobre desarrollo de software, y el contenido será desde post puramente técnicos,
     pasando por mis propias reflexiones y opiniones personales, hasta documentar desafíos con los que me he encontrado
     y como me he enfrentado a ellos hasta solucionar problemas.
+- Slug: "axe"
+  Number: 11
+  Resume: |
+    Hace unos días pregunté a [Juanjo](https://accessibites.net/), que para quien no lo conozca, es un referente en
+    cuanto a [accesibilidad](https://es.wikipedia.org/wiki/Accesibilidad_web) cómo podría mejorar la accesibilidad de IOKode.
+
+    Tras [una agradable conversación por Twitter](https://twitter.com/montyclt/status/1517578605458513920?s=21&t=rbht-LevjgYEYSIX7jY83g),
+    me recomendó que la testase con la extensión [Axe](https://www.deque.com/axe/devtools/).
