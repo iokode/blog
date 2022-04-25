@@ -1,3 +1,9 @@
+- Slug: "por-que-usar-una-base-de-datos"
+  Number: 12
+  Resume: |
+    Nos hemos acostumbrado a utilizar un sistema gestión de base de datos (normalemente relacional) como forma predeterminada de persistir
+    los datos, pero... ¿es necesario siempre? ¿por qué no guardarlos directamente en un fichero? ¿qué nos aporta utilizarlos?
+
 - Slug: "axe"
   Number: 11
   Resume: |
