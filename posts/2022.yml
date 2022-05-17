@@ -1,3 +1,10 @@
+- Slug: "los-patrones-repositorio-y-unidad-de-trabajo"
+  Number: 13
+  Resume: |
+    El patrón Repositorio permite encapsular que operaciones de persistencia se pueden realizar sobre una entidad.
+    El patrón Unidad de Trabajo permite mantener una lista de operaciones de persistencia para realizar en una misma transacción.
+    Veamos en que consisten y cómo podemos usarlos en conjunto.
+
 - Slug: "por-que-usar-una-base-de-datos"
   Number: 12
   Resume: |
