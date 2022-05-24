@@ -1,3 +1,10 @@
+- Slug: "ya-tenemos-feed-rss"
+  Number: 15
+  Resume: |
+    Tener un [feed RSS](https://es.wikipedia.org/wiki/RSS) es algo prácticamente obligatorio en un blog,
+    y aunque el enlace de Feed RSS lleva en el pie de página desde que abrí el blog, por desgracia no
+    enlazaba a ningún sitio. Ahora ya lo hace.
+
 - Slug: "los-patrones-repositorio-y-unidad-de-trabajo"
   Number: 13
   Resume: |
