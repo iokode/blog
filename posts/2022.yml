@@ -1,3 +1,13 @@
+- Slug: "versionado-automatico-de-paquetes-nuget-con-un-sistema-ci-cd"
+  Number: 29
+  Resume: |
+    Lo que estábamos haciendo en el equipo de desarrollo hasta ahora, es que cada vez que hacíamos un
+    cambio en alguno de los paquetes, actualizábamos a mano la propiedad `<PackageVersion>` del fichero *.csproj.
+    Un workflow en [GitHub Actions](https://github.com/features/actions) detectaba este cambio en cada commit,
+    y si era superior al anterior, ejecutaba `dotnet pack` para generar un paquete nuevo.
+
+    Sin embargo, ha llegado un punto en el que realizar este cambio de versión a mano es inviable, y hemos optado por **automatizarlo**.
+
 - Slug: "hablemos-de-distintas-formas-de-aprender-programacion"
   Number: 28
   Resume: |
