@@ -1,3 +1,14 @@
+- Slug: "burbuja-sector-software"
+  Number: 30
+  Resume: |
+    Es bastante obvio que, en los últimos años, [los salarios en este sector han estado subiendo](https://insights.stackoverflow.com/survey),
+    y ello ha hecho que el último año [se haya empezado a hablar de una burbuja en el sector](https://www.reddit.com/r/askspain/comments/uwlgr8/estamos_viviendo_una_burbuja_de_desarrolladores/).
+
+    También han aparecido noticias de [despidos masivos de programadores en empresas tecnológicas](https://www.xataka.com/empresas-y-economia/ola-despidos-continua-grandes-tecnologicas-microsoft-esta-echando-al-1-su-plantilla).
+    En una conversación con un compañero de trabajo, afirmó que lo que está ocurriendo es que **la burbuja ha comenzado a estallar**.
+    
+    ¿Es esto realmente así?
+
 - Slug: "versionado-automatico-de-paquetes-nuget-con-un-sistema-ci-cd"
   Number: 29
   Resume: |
