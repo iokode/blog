@@ -1,0 +1,34 @@
+- Slug: "opinionated-framework-validaciones"
+  Number: 36
+  Resume: |
+    La [validación de precondiciones e invaraintes](https://blog.koalite.com/2014/01/diseno-por-contrato/)
+    es un requisito básico en el diseño de cualquier clase o estructura.
+
+    Existen varios paquetes en NuGet para realizar esta validación de forma sencilla, pero prácticamente
+    todos pecan del mismo problema: **no permiten personalizar el tipo de excepción que se lanzará cuando
+    la validación no se cumple**.
+
+    OpinionatedFramework incluye una librería de validación que refleja lo que para mi es el API perfecta
+    para validaciones.
+    
+- Slug: "arquitectura-limpia-opinionada"
+  Number: 35
+  Resume: |
+    Hasta ahora hemos hablado de las opiniones de un framework, pero estas suelen ser bypasseadas cuando
+    se aplica [arquitectura limpia](https://www.amazon.es/dp/8441539901). Poco importa que tu framework
+    incluya un contrato para el envío de notificaciones si tu capa aplicación no depende de él y por lo
+    tanto no lo puede utilizar directamente. Poco importa la forma en la que el framework valide los datos
+    de entrada si tu capa de aplicación va a hacerlo de otra forma diferente.
+    
+- Slug: "este-framework-tiene-opinion"
+  Number: 34
+  Resume: |
+    Hace unos días [pregunté en Twitter](https://twitter.com/montyclt/status/1610012234087817217) si el
+    framework [Laravel](https://laravel.com/) era un framework opinionado. Quería saber primero, que
+    se entiende por un framework opinionado y segundo, si esto es bueno o no.
+
+    Aunque la pregunta la hice usando Laravel de ejemplo, ya que tiene fama de ser un framework opinionado
+    a raíz de los servicios que ofrece y los patrones que promueve, todo el contenido de esta entrada se
+    podría aplicar a cualquier otro framework.
+
+    El hilo dio debate y sacaron a la luz algunos argumentos interesantes sobre lo que es un framework opinionado.
