@@ -1,3 +1,10 @@
+- Slug: "opinionated-framework-contratos"
+  Number: 38
+  Resume: |
+    Los contratos son una serie de interfaces en el core de OpinionatedFramework que pueden ser localizadas
+    desde el propio Service Locator estático de OpinionatedFramework y están pensados para optimizar el
+    desarrollo de aplicaciones.
+
 - Slug: "opinionated-framework-resolviendo-servicios"
   Number: 37
   Resume: |
