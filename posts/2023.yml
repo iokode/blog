@@ -1,3 +1,12 @@
+- Slug: "opinionated-framework-resolviendo-servicios"
+  Number: 37
+  Resume: |
+    Toca hablar de como en OpinionatedFramework se registrar y resuelven servicios, algo importantisimo
+    ya que todos los contratos que el propio framework trae consigo mismo son servicios registrados y las
+    fachadas son clases que tienen que resolver estos servicios.
+
+    Pero antes de ello, vamos a hablar de distintas formas de resolver servicios.
+
 - Slug: "opinionated-framework-validaciones"
   Number: 36
   Resume: |
