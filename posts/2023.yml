@@ -1,3 +1,11 @@
+- Slug: "comunicacion-ux"
+  Number: 40
+  Resume: |
+    Una aplicación puede tener una UI impecable, con elementos bien utilizados, correctamente alineados, etc.
+    y luego mostrar un texto deficiente en un cuadro de diálogo, haciendo que la UX pueda ser un infierno.
+    
+    En esta entrada voy a reflexionar un poco sobre ello.
+
 - Slug: "dejemos-de-usar-sms-para-2fa"
   Number: 39
   Resume: |
