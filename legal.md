@@ -1,18 +1,15 @@
 ## Propiedad del sitio web
 
-Este sitio web es propiedad de Ivan Montilla, resiendente en España.
-- **DNI**: 49.180.226-Q
-- **Establecimiento**: Calle Túria 53 bajo izquierda, Valencia 46008. España
-- **Dirección de correo electrónico**: <ivan@iokode.blog>
+Este sitio web es propiedad de IOKode OÜ, empresa registrada en Estonia.
+- **EU VAT ID**: EE102589607
+- **Dirección**: Harju maakond, Tallinn, Lasnamäe linnaosa, Lõõtsa tn 2a, 11415. Estonia.
+- **Dirección de correo electrónico**: <legal@iokode.blog>
 
 ## Propiedad de las imágenes alojadas
 
 El nombre IOKode y las imágenes que conforman su logotipo, también
-son propiedad de Ivan Montilla y su uso está prohibido sin autorización.
+son propiedad de IOKode OÜ y su uso está prohibido sin autorización.
 Si necesitas utilizar la marca IOKode de alguna manera, envía un email a <ivan@iokode.blog>.
-
-El nombre VADAVO y las imágenes que conforman su logotipo, son
-propiedas de VADAVO SOLUCIONES SL, y su uso está prohibido sin autorización.
 
 ## Política de cookies
 Este sitio web no utiliza cookies.
