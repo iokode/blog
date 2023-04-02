@@ -1,3 +1,13 @@
+- Slug: "semantic-versioning"
+  Number: 43
+  Resume: |
+    Sumergirse en el mundo del versionado semántico puede ahorrar tiempo y frustración a la hora de trabajar con
+    paquetes y dependencias en tus proyectos. Conocer cómo asignar e incrementar correctamente los números de
+    versión es fundamental para mantener la compatibilidad y evitar problemas con las actualizaciones.
+
+    Descubre en este post la relevancia del versionado semántico, sus reglas básicas y cómo aplicarlo en tus paquetes
+    NuGet. Asegura la estabilidad de tus proyectos y facilita la actualización de tus dependencias sin sorpresas indeseadas.
+
 - Slug: "las-aplicaciones-web-son-una-chapuza"
   Number: 42
   Resume: |
