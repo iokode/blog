@@ -1,3 +1,10 @@
+- Slug: "debate-como-serializar-correctamente-las-entidades"
+  Number: 44
+  Resume: |
+    En esta entrada, más que exponer algo sobre mi experiencia, me gustaría abrir un debate sobre la forma correcta
+    de serializar tus entidades –o cualquier objeto o estructura– para poder ser reconstruido en un futuro, incluso
+    durante la ejecución otra instancia de la aplicación.
+
 - Slug: "semantic-versioning"
   Number: 43
   Resume: |
