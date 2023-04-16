@@ -1,3 +1,9 @@
+- Slug: "opinionatedframework-contenedor-de-dependencias-estandar"
+  Number: 45
+  Resume: |
+    Esta entrada es un diario de desarrollo sobre los últimos cambios realizados en
+    [OpinionatedFramework](https://iokode.blog/post/2023/arquitectura-limpia-opinionada).
+
 - Slug: "debate-como-serializar-correctamente-las-entidades"
   Number: 44
   Resume: |
