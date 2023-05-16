@@ -1,3 +1,11 @@
+- Slug: "opinionated-framework-comandos"
+  Number: 46
+  Resume: |
+    Continuamos los las novedades de OpinionatedFramework. En esta
+    entrada voy a hablar sobre cómo se manejan los comandos. Los
+    comandos son una parte central del framework, proporcionando una
+    manera clara y coherente de encapsular los casos de uso de tu aplicación.
+
 - Slug: "opinionated-framework-contenedor-de-dependencias-estandar"
   Number: 45
   Resume: |
