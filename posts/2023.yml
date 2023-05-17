@@ -1,3 +1,16 @@
+- Slug: "ia-escribir-blog"
+  Number: 47
+  Resume: |
+    A finales del año pasado [escribí sobre cómo usé ChatGPT para crear una extensión de Asciidoctor](https://iokode.blog/post/2022/la-inteligencia-artificial-en-el-ambito-de-la-programacion).
+    En aquella entrada me centré en cómo esta herramienta puede ayudar a los programadores a escribir software de
+    manera más eficiente. Desde entonces, la he estado utilizando como [copiloto](https://github.com/features/preview/copilot-x)
+    para el desarrollo de casi cualquier cosa.
+
+    Hasta entonces no la había llegado a utilizar para escribir entradas del blog (aunque sí [para que las corrigiese](https://twitter.com/Montyclt/status/1647710975238238208))
+    porque no me gustaba el resultado y me costaba mucho lograr que escribiera lo que yo quería, sin embargo,
+    he de confesar que [la entrada anterior, en la que hablo del avance de OpinionatedFramework](https://iokode.blog/post/2023/opinionated-framework-comandos)
+    ha sido escrita en gran parte por ChatGPT. Yo simplemente me he limitado a hacer pequeñas correcciones y ampliar ligeramente la información.
+
 - Slug: "opinionated-framework-comandos"
   Number: 46
   Resume: |
