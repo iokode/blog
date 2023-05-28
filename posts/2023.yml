@@ -1,3 +1,10 @@
+- Slug: "lanzado-opinionated-framework-ensure-api"
+  Number: 48
+  Resume: |
+    OpinionatedFramework aún tiene un camino por recorrer antes de lanzar su primera versión completa,
+    sin embargo como Ensure está desacoplado al mismo, he podido lanzar este API de validaciones antes
+    de que el resto del framework esté listo.
+
 - Slug: "ia-escribir-blog"
   Number: 47
   Resume: |
