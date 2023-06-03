@@ -1,3 +1,9 @@
+- Slug: "compartir-fichero-codigo-varios-proyectos-sin-referencias"
+  Number: 49
+  Resume: |
+    En esta entrada exploramos como se puede compartir el mismo fichero de código fuente C# entre
+    varios proyectos sin necesidad de hacer referencias.
+
 - Slug: "lanzado-opinionated-framework-ensure-api"
   Number: 48
   Resume: |
