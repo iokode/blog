@@ -1,3 +1,10 @@
+- Slug: "consideraciones-publicar-nuget"
+  Number: 50
+  Resume: |
+    No hace mucho escribí sobre [como automatizar la publicación de paquetes NuGet](https://iokode.blog/post/2022/versionado-automatico-de-paquetes-nuget-con-un-sistema-ci-cd).
+    Escribí esa entrada basándome en mi experiencia utilizando un feed privado de paquetes para un proyecto en VADAVO, pero ahora he obtenido algo de experiencia publicando
+    paquetes NuGet de [OpinionatedFramework](https://github.com/iokode/OpinionatedFramework).
+
 - Slug: "compartir-fichero-codigo-varios-proyectos-sin-referencias"
   Number: 49
   Resume: |
