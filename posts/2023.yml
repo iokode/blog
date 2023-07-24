@@ -1,4 +1,11 @@
 - Slug: "consideraciones-publicar-nuget"
+  Number: 51
+  Resume: |
+    Hace unos días [afirmaba Elisa en Twitter que las pruebas técnicas deberían de pagarse por ser trabajo](https://twitter.com/ElisaEFS/status/1676560981806268417).
+    A esta afirmación respondió Javier exponiendo su experiencia y opinión haciendo pruebas técnicas y bueno, pues yo he querido meterme también en el meollo exponiendo
+    tanto mi experiencia como opinión. Sin embargo, dado que esta da para bastante más que un tweet, pues he decidido escribirla aquí.
+
+- Slug: "consideraciones-publicar-nuget"
   Number: 50
   Resume: |
     No hace mucho escribí sobre [como automatizar la publicación de paquetes NuGet](https://iokode.blog/post/2022/versionado-automatico-de-paquetes-nuget-con-un-sistema-ci-cd).
