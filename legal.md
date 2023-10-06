@@ -3,19 +3,19 @@
 Este sitio web es propiedad de IOKode OÜ, empresa registrada en Estonia.
 - **EU VAT ID**: EE102589607
 - **Dirección**: Harju maakond, Tallinn, Lasnamäe linnaosa, Lõõtsa tn 2a, 11415. Estonia.
-- **Dirección de correo electrónico**: <legal@iokode.blog>
+- **Dirección de correo electrónico**: <legal@iokode.net>
 
 ## Propiedad de las imágenes alojadas
 
 El nombre IOKode y las imágenes que conforman su logotipo, también
 son propiedad de IOKode OÜ y su uso está prohibido sin autorización.
-Si necesitas utilizar la marca IOKode de alguna manera, envía un email a <ivan@iokode.blog>.
+Si necesitas utilizar la marca IOKode de alguna manera, envía un email a <ivan@iokode.net>.
 
 ## Política de cookies
 Este sitio web no utiliza cookies.
 
 ## Política de privacidad
-Este sitio web no posee formulario de contacto, y por lo tanto el usuario no introducirá
+Este sitio web no posee formularios de contactos y, por lo tanto el usuario no introducirá
 sus datos personales.
 
 Como forma de registro técnico, el servidor almacena la dirección IP,
@@ -33,7 +33,7 @@ los requisitos de licencia de la obra original. En esos casos, siempre se indica
 al inicio de la entrada.
 
 Se entiende como adaptación cuando se utiliza otra obra como base para escribir
-la entrada, y no cuando simplemente se le menciona, se le cita o se le responde.
+la entrada, pero no cuando simplemente se le menciona, se le cita o se le responde.
 
 La licencia de los vídeos sigue exactamente la misma lógica que la de las entradas,
 por lo que un vídeo por defecto tendrá la licencia [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/),
