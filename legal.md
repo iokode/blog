@@ -2,7 +2,7 @@
 
 Este sitio web es propiedad de IOKode OÜ, empresa registrada en Estonia.
 - **EU VAT ID**: EE102589607
-- **Dirección**: Harju maakond, Tallinn, Lasnamäe linnaosa, Lõõtsa tn 2a, 11415. Estonia.
+- **Dirección**: Harju maakond, Kuusalu vald, Pudisoo küla, Männimäe/1, 74626
 - **Dirección de correo electrónico**: <legal@iokode.net>
 
 ## Propiedad de las imágenes alojadas
