@@ -1,0 +1,249 @@
+---
+title: "Consideraciones al publicar un paquete NuGet"
+slug: consideraciones-publicar-nuget
+author: montyclt
+publishDate: 2023-07-01
+license: CC BY 4.0
+discussionId: 50
+tags:
+ - spanish-legacy-post
+---
+
+No hace mucho escribí sobre [como automatizar la publicación de paquetes
+NuGet](https://iokode.blog/post/2022/versionado-automatico-de-paquetes-nuget-con-un-sistema-ci-cd).
+Escribí esa entrada basándome en mi experiencia utilizando un feed privado de
+paquetes para un proyecto en VADAVO, pero ahora he obtenido algo de experiencia
+publicando paquetes NuGet de
+[OpinionatedFramework](https://github.com/iokode/OpinionatedFramework).
+
+## Añadir archivos de fuera de la solución
+
+Algo a tener en cuenta a la hora de generar un paquete público, es que este debe
+de tener una licencia y, opcionalmente, un readme y un icono. Estos archivos
+deben incluirse dentro del paquete.
+
+Personalmente, me gusta separar estos archivos del código, por lo que los ubico
+un directorio superior al directorio de la solución, manteniendo una estructura
+de ficheros de forma similar a esta:
+
+```
+Raíz del repositorio
+ ├─ src/ (aquí se ubica la solución)
+ │   ├─ IOKode.OpinionatedFramework.sln
+ │   ├─ Ensuring/
+ │   ├─ Facades/
+ │   └─ Foundation/
+ ├─ docs/
+ ├─ README.md
+ ├─ LICENSE
+ └─ package_icon.png
+```
+
+Al colocar estos archivos que se empaquetarán fuera del directorio `src/`, estos
+están fuera del ámbito de acceso predeterminado de un CSPROJ, por lo que hay que
+incluirlos manualmente:
+
+```xml
+<ItemGroup Label="Include additional files to package">
+    <None Include="..\..\README.md" Pack="true" PackagePath=""/>
+    <None Include="..\..\LICENSE" Pack="true" PackagePath=""/>
+    <None Include="..\..\package_icon.png" Pack="true" PackagePath=""/>
+</ItemGroup>
+```
+
+Puedes comprobar que los archivos se han incluido en el proyecto correctamente
+porque estos aparecerán en el explorador de soluciones como un acceso directo y
+podrás llegar a ellos con un simple doble-clic:
+
+![Archivos LICENSE, README.md y package_icon.png aparecen en el explorador de soluciones.](/posts/assets/consideraciones-publicar-nuget/solution-explorer.png)
+
+Tras comprobar que los archivos están correctamente referenciados, puede ser
+algo molesto verlos en el explorador de soluciones, especialmente si hay muchos
+de estos. Puedes ocultar estos archivos del explorador de soluciones utilizando
+la propiedad `Visible="false"` del ítem `None`:
+
+```xml
+<ItemGroup Label="Include additional files to package">
+    <None Visible="false" Include="..\..\docs\ensure\README.md" Pack="true" PackagePath=""/>
+    <None Visible="false" Include="..\..\LICENSE" Pack="true" PackagePath=""/>
+    <None Visible="false" Include="..\..\package_icon.png" Pack="true" PackagePath=""/>
+</ItemGroup>
+```
+
+## Utilizar un pipeline de despliegue continuo
+
+La compilación y subida de tu paquete a NuGet debería hacerse desde un pipeline
+de despliegue continuo y no de forma manual. Personalmente utilizo [GitHub
+Actions](https://github.com/features/actions), pero serviría cualquier otro.
+
+El motivo es doble, por una parte para automatizar todo el proceso de
+compilación y generación del paquete (creamos software para automatizar trabajo,
+automaticemos nuestro propio trabajo), pero es que además es necesario para
+asegurar la compilación determinista.
+
+## Pasar los Health Checks
+
+Cuando publiqué la primera versión de [Ensure
+API](https://github.com/iokode/OpinionatedFramework/blob/main/docs/ensure/README.md),
+desconocía la existencia de los Health Checks, pero mi colega @AndreuCodina me
+envió el siguiente mensaje:
+
+![Captura de WhatsApp de Andreu en el que me envía una foto de los Health Checks no pasados y me dice “Te deseo suerte con esto”.](/posts/assets/consideraciones-publicar-nuget/andreu.jpg)
+
+Los Health Checks son una serie de comprobaciones que aseguran que se han
+seguido un mínimo de practicas al generar el paquete.
+
+Me puse a investigar sobre qué es cada una de estas comprobaciones:
+
+- **Source Link:** Este ya lo conocía, básicamente consiste en añadir un
+  metadato al paquete para indicarle desde qué repositorio puede obtener el
+  código fuente. Esto permite mejorar enormemente el proceso de depuración al
+  permitir al IDE descargar el código fuente cuando se hace “step into” hacia
+  código de tu librería.
+- **Deterministic**: Cuando MSBuild construye un DLL, este por defecto es
+  diferente en cada compilación, ya que incluye algunos metadatos únicos como la
+  hora de generación. Este health-check indica que los DLL incluidos en el
+  paquete siempre serán iguales cada vez que se construya la misma versión.
+- **Compiler Flags**: Esto no sé lo que es xD, sólo sé que se arregló sólo al
+  arreglar las otras dos.
+
+Más adelante en esta misma entrada entraré en detalles de cómo proceder para
+pasar cada uno de estas comprobaciones.
+
+### Source Link
+
+[Source
+Link](https://learn.microsoft.com/en-us/dotnet/standard/library-guidance/sourcelink)
+es una tecnología que permite ligar tu paquete a un commit específico de un
+repositorio. Admite varios proveedores como GitHub, Azure Repos, GitLab o Azure
+DevOps.
+
+Cuando un paquete que tiene Source Link habilitado es compilado desde un
+repositorio git (hay un directorio `.git` en algún directorio superior o en el
+mismo) este recoge al commit actual y lo añade al paquete junto con la URL del
+repositorio.
+
+Esto permite al IDE durante el proceso de dubug mostrar el código fuente
+original al hacer *step into* sobre el código de tu librería.
+
+La forma de habilitar Source Link depende de la plataforma donde alojes el
+repositorio, pero por lo general consiste simplemente en instalar un paquete
+NuGet. Te recomiendo pasar por [la documentación
+oficial](https://github.com/dotnet/sourcelink).
+
+### Compilación determinista
+
+Esta parte es bastante fácil. Como ya he explicado previamente, sirve para
+asegurar que siempre se generan los mismos ensamblados cuando se compila el
+mismo código fuente.
+
+Para habilitarlo, hay que añadir las siguientes dos propiedades al CSPROJ (o a
+través del parámetro /p):
+
+```xml
+<Deterministic>true</Deterministic>
+<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+```
+
+La primera flag significa que debe de hacer una compilación determinista, pero
+no es suficiente para pasar el health check, también es necesario añadir la
+segunda flag que indica que se está compilando desde un pipeline de CI/CD.
+
+Para evitar que estas propiedades se apliquen durante una compilación fuera del
+pipeline, se puede añadir una condición al grupo que las contenga:
+
+```xml
+<PropertyGroup Label="GitHub Actions settings" Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+</PropertyGroup>
+```
+
+Esta condición lo que comprueba es el valor de la variable de entorno
+`GITHUB_ACTION`, que está presente con el valor `true` siempre que se ejecuta
+dentro de una pipeline de GitHub Actions.
+
+### Compiler Flags
+
+Esto desconozco todo lo que comprueba y [la información que he encontrado en
+Internet sobre ello es escasa](https://github.com/dotnet/docs/issues/20300).
+
+Lo único que he podido sacar en claro es que se requiere [el SDK y los
+compiladores
+actualizados](https://bartwullems.blogspot.com/2021/06/nuget-package-explorercompiler-flags.html).
+
+Lo que sí puedo asegurar es que mi paquete lo marcaba en rojo y al corregir los
+otros dos aspectos, se marcó en verde, por lo que es posible que si sigues el
+resto de consejos, también pases esta verificación.
+
+Si alguien tiene más información sobre esto, agradecería mucho un comentario
+para actualizar la entrada.
+
+## Crea un paquete de símbolos
+
+Esto va muy de la mano con Source Link ya que se usa para mejorar la experiencia
+de debug, pero no es lo mismo.
+
+Un [paquete de
+símbolos](https://learn.microsoft.com/en-us/nuget/create-packages/symbol-packages-snupkg)
+es un paquete NuGet que queda asociado a tu paquete principal, pero en vez de
+empaquetar los ensamblados, empaqueta los [símbolos de debugging (archivos
+.PDB)](https://stackoverflow.com/a/25562292/4667174).
+
+Esto puedes hacerlo simplemente añadiendo estas dos propiedades al CSPROJ:
+
+```xml
+<IncludeSymbols>true</IncludeSymbols>
+<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+```
+
+Ahora, cuando ejecutes `dotnet pack`, se creará un segundo paquete snupkg junto
+al paquete nupkg, este segundo paquete incluirá los símbolos.
+
+Luego, simplemente puedes hacer push de ambos paquetes:
+
+```
+dotnet nuget push MyPackage.nupkg
+dotnet nuget push MyPackage.snupkg
+```
+
+## Organiza el CSPROJ
+
+Al crear un CSPROJ para un paquete, en este se debe de incluir muchísimos
+metadatos como el autor, copyright del código, licencia, etc. Todo esto sumado
+al resto de información como el TFM, la versión del lenguaje o las referencias,
+hace que acabes con un fichero CSPROJ grande.
+
+Para lidiar con esto, se puede separar las propiedades e ítems relacionados en
+varios grupos y etiquetar cada grupo, tal como hago [en los CSPROJ de
+OpinionatedFramework](https://github.com/iokode/OpinionatedFramework/blob/main/src/Ensuring/Ensuring.csproj).
+
+## Correcto versionado de los ensamblados
+
+Un paquete NuGet en realidad no es más que un archivo ZIP que contiene una serie
+de archivos entre los cuales se encuentran, por una parte, una serie de
+metadatos con información sobre el mismo paquete, y por otra parte, los
+ensamblados (archivos DLL) que conforman la librería en sí misma.
+
+Cada uno de estos ensamblados tiene por sí mismo un número de versión que por
+defecto es 1.0.0.0 y es independiente del número de versión del paquete.
+
+La versión del ensamblado generado se puede establecer tanto en el CSPROJ como
+utilizando el parámetro `/p:Version` en el comando `dotnet build`.
+
+Mi recomendación es que asignes el mismo número de versión tanto para el paquete
+como para el ensamblado, de esta forma es fácilmente reconocible a qué paquete
+pertenece cada ensamblado.
+
+## Firma el paquete
+
+La firma de un paquete sirve para verificar su integridad y la autoría,
+asegurando que el paquete no ha sido manipulado por un tercero una vez
+publicado.
+
+Actualmente no he firmado nunca un paquete, por lo que mi experiencia en este
+punto es nula, sin embargo, me gustaría dejar constancia en esta entrada de que
+la opción existe y dejar [un enlace a la documentación
+oficial](https://learn.microsoft.com/en-us/nuget/create-packages/sign-a-package).
+
+Si más adelante firmo mis paquetes, actualizaré la entrada.

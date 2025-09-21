@@ -1,0 +1,154 @@
+---
+title: "La comunicación como experiencia de usuario"
+slug: comunicacion-ux
+author: montyclt
+publishDate: 2023-02-21
+license: CC BY 4.0
+discussionId: 40
+tags:
+ - spanish-legacy-post
+---
+
+En relación a los recientes cambios de Twitter sobre 2FA de los cuales hablé en
+[mi última entrada](https://iokode.blog/post/2023/dejemos-de-usar-sms-para-2fa),
+afirmé rotundamente que el problema que desencadenó la ola de reacciones de los
+usuarios fue una [muy mala comunicación con el
+usuario](https://twitter.com/montyclt/status/1626919967277912067).
+
+El cambio que se llevó a cabo no me parece algo malo, es más, me parece un
+cambio razonable dentro del objetivo de Elon Musk de reducir costes en Twitter,
+sin embargo la forma de comunicarlo me parece demencial.
+
+Muchas veces cuando hablamos de experiencia de usuario, nos centramos en las UI
+de las aplicaciones y, aunque estas existen para comunicar la aplicación con el
+usuario, en esta entrada me centraré en otro tipo de comunicación: **los
+mensajes emitidos por la aplicación**.
+
+Y es que, una aplicación puede tener una UI impecable, con elementos bien
+utilizados, correctamente alineados, etc. y luego mostrar un texto deficiente en
+un cuadro de diálogo, haciendo que la UX pueda ser un infierno.
+
+## El caso de Twitter
+
+El siguiente mensaje ha estado apareciendo a los usuarios que tienen activida la
+2FA sin una subscripción activa de Blue.
+
+> Solo los suscriptores de Twitter Blue pueden usar el método de autenticación
+en dos fases por mensaje de texto. La eliminación de este método solo tardará
+unos minutos. Puedes seguir usando otros métodos, como la app de autenticación y
+la llave de seguridad.
+> 
+> 
+> Para evitar perder acceso a Twitter, elimina la autenticación en dos fases por
+mensaje de texto antes del 19 mar. 2023.
+> 
+
+En mi opinión, la ola de reacción negativa que vivimos durante los últimos días
+no se hubiese dado si el mensaje hubiese sigo algo así:
+
+> El método de autenticación en dos fases se considera obsoleto y será eliminado
+a partir del 19 de mar. 2023. Se recomienda encarecidamente utilizar otro método
+como la app de autenticación o la llave de seguridad.
+> 
+
+Este nuevo mensaje, a diferencia del anterior, elimina el segundo párrafo con
+todo amenazante, pues a mi me da la sensación de leer algo tipo “si no
+desactivas 2FA vía SMS, perderás para siempre el acceso por desobediencia”.
+Simplemente se limita a avisar de que será desactivado automáticamente llegada
+la fecha límite. Por otro lado, no utiliza los menús de configuración de
+seguridad para hacer marketing de una suscripción de pago, algo que da muy mala
+imagen.
+
+Cabría destacar que esta propuesta, además del mensaje requiere cambios de
+comportamiento, pues la característica en concreto pasa de ser sólo para
+suscriptores a desaparecer y la acción llegada la fecha límite pasa de ser
+perder la cuenta a desactivarse, sin embargo, me parecen cambios de
+comportamiento menores.
+
+## Otros casos
+
+El caso de Twitter no es un caso aislado. Por desgracia, me he topado con alguna
+que otra aplicación que, o bien como en el caso de Twitter, se va de las ramas
+promocionando cosas donde no debe, o bien tienen algunos “mensajes creativos”.
+He utilizado aplicaciones que tras rellenar un formulario y pulsar un botón, me
+ha saltado una alerta que rezaba algo así:
+
+> ¿Viene usted del futuro?
+> 
+
+Tras leer este mensaje, mi cara fue 🫤 pues no fui capaz de relacionar que el
+error se debía a que la fecha de nacimiento era igual o superior a la fecha
+actual.
+
+Este mensaje puede ser ingenioso y, no creo que este mal incluirlo, pero siempre
+debe de estar acompañado de un mensaje que indique de forma clara donde está el
+problema.
+
+–No es que yo fuese tonto y no sepa cuando he nacido, es que ese formulario
+venía con la fecha de nacimiento preseleccionada con el día de hoy, por lo que
+vi un campo rellenado y pasé directamente al siguiente, lo cual dice mucho (y no
+para bien) de esa UX, pero eso ya es algo que se sale del ámbito de esta
+entrada.–
+
+Otro ejemplo clásico son los mensajes de error indescifrables. ¿Qué significa
+error 4ea3fb? ¿qué me aporta a un usuario un número exadecimal en la ventana de
+un error?
+
+Parafraseando a @jmhdez en su entrada [Lo peor de desarrollar
+software](https://blog.koalite.com/2016/06/lo-peor-de-desarrollar-software/),
+*no hace falta ser un experto redactor, con aplicar un poco de sentido común y
+poner algo de interés basta*.
+
+## Logs y excepciones
+
+Por último, a modo de campaña, me gustaría hacer incapié que de la misma forma
+que hay que escribir buenos mensajes al usuario, los mensajes de las excepciones
+y los logs deberían ser exactamente igual de claros. Más de una vez me he vuelto
+loco analizando archivos de logs porque “total, esto no lo ve el usuario final,
+puede estar de cualquier manera”.
+
+Sobre las excepciones, un buen indicador de que un mensaje está bien escrito es
+si se lo puedes pasar directamente al usuario sin reescribirlo.
+
+Imaginemos este fragmento de código en un controlador de interfaz de usuario:
+
+```csharp
+try
+{
+    createUser(inputData);
+}
+catch (UserAlreadyExists)
+{
+    showAlert("The username already exists.");
+}
+catch (InvalidBirthDate)
+{
+    showAlert("The user must be over 18 years old.");
+}
+catch (Exception)
+{
+    showAlert("An unexpected error was happened.");
+}
+```
+
+Si el mensaje que hay dentro de los excepciones está bien escrito, deberiamos de
+poder pasárselo directamente al usuario sin mayor problema:
+
+```csharp
+try
+{
+    createUser(inputDate);
+}
+catch (Exception ex)
+{
+    showAlert(ex.Message);
+}
+```
+
+Esto incluso se puede reducir a una única línea si tu framework posee un
+manejador global de excepciones que muestre un mensaje al usuario de todas
+aquellas excepciones no capturadas en el controlador de interfaz de usuario:
+
+```csharp
+createUser(inputDate);
+```

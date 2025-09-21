@@ -1,0 +1,68 @@
+---
+title: "No estés tan seguro de lo que crees saber"
+slug: no-estes-tan-seguro-de-lo-que-crees-saber
+author: montyclt
+publishDate: 2022-08-12
+license: CC BY 4.0
+discussionId: 24
+tags:
+ - spanish-legacy-post
+---
+
+El desarrollo de software es una profesión muy compleja que abarca muchas
+áreas, en las que son fáciles entrar, pero no es tan fácil profundizar. Esto
+hace que muchos empecemos programando cosas que, si bien funcionan, podrían
+estar mejor hechas y con el tiempo te das cuenta de que había una forma mejor
+de hacerlo.
+
+## Un ejemplo: un mal uso de la herencia
+Durante algún tiempo, creí que la herencia en la POO estaba diseñada para
+proporcionar una serie de funcionalidades que más tarde usarían otras clases,
+sin tener en cuenta el polimorfismo.
+
+Entender la herencia de esta forma, me llevó durante un tiempo a diseñar clases
+abstractas que servían para dar funcionalidad a las clases que la extendiesen.
+Un ejemplo de esto es la librería
+[Storable](https://github.com/montyclt/Storable/blob/master/Storable.ts) que
+escribí en TypeScript, una clase muy simple que al extenderla proporciona los
+métodos `store` y `retrieve` para guardar objetos en el LocalStorage del
+navegador.
+
+Hacer uso de la herencia para esto tiene varios problemas que escapan al ámbito
+de esta entrada (de hecho, esta librería tiene más problemas que simplemente el
+mal uso de la herencia), pero lo que quiero decir, es que hace unos seis años
+cuando la escribí, pensaba que la herencia existía precisamente para este tipo
+de
+casos.
+
+## No es algo malo
+Nadie nace sabiendo, y [aprender requiere tiempo y
+experiencia](https://blog.koalite.com/2014/11/aprende-despacio/), necesitas
+darte
+de cara con el problema para entenderlo y buscar un diseño alternativo que lo
+solucione. No te sientas mal si un día descubres que lo llevabas haciendo
+durante varios años no es la forma más ideal, al contrario, siéntete bien por
+haber aprendido.
+
+Este tipo de experiencias pueden despertar el síndrome del impostor, por lo que
+hay que ir con mucho cuidado para evitar que te afecte negativamente.
+
+También debes de tener cuidado con los impulsos de querer mejorar todo lo que
+has
+hecho en el pasado, [pues puede ser
+contraproducente](https://blog.koalite.com/2014/11/codigo-bonito-codigo-feo-codigo-que-funciona/).
+
+## Conclusiones
+Estoy bastante seguro de que esto es aplicable a cualquier ámbito de la vida en
+el que se requiera algo de formación, y no únicamente al desarrollo de software.
+Puedes creer saber la forma correcta de cocinar una tortilla de patatas, y un
+día te das cuenta de que tal vez esa sartén que llevas usando diez años, estaba
+diseñada para ser usada de forma algo diferente. No pasa nada por ello, has
+aprendido algo nuevo.
+
+Simplemente, debes de tener la mente abierta y pensar que hagas lo que hagas,
+incluso cuando han pasado años y crees que ya lo has hecho mejor que antes, tal
+vez haya una forma mejor de hacerlo. Puede que incluso esa forma aún no se haya
+descubierto. Si te planteas el porqué de las cosas, tal vez puedas contribuir a
+descubrir mejores formas de hacer las cosas.
+

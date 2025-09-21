@@ -1,0 +1,67 @@
+---
+title: "Uso de la inteligencia artificial para escribir en un blog técnico"
+slug: ia-escribir-blog
+author: montyclt
+publishDate: 2023-05-17
+license: CC BY 4.0
+discussionId: 47
+tags:
+ - spanish-legacy-post
+---
+
+A finales del año pasado [escribí sobre cómo usé ChatGPT para crear una
+extensión de
+Asciidoctor](https://iokode.blog/post/2022/la-inteligencia-artificial-en-el-ambito-de-la-programacion).
+En aquella entrada me centré en cómo esta herramienta puede ayudar a los
+programadores a escribir software de manera más eficiente. Desde entonces, la he
+estado utilizando como [copiloto](https://github.com/features/preview/copilot-x)
+para el desarrollo de casi cualquier cosa.
+
+Hasta entonces no la había llegado a utilizar para escribir entradas del blog
+(aunque sí [para que las
+corrigiese](https://twitter.com/Montyclt/status/1647710975238238208)) porque no
+me gustaba el resultado y me costaba mucho lograr que escribiera lo que yo
+quería, sin embargo, he de confesar que [la entrada anterior, en la que hablo
+del avance de
+OpinionatedFramework](https://iokode.blog/post/2023/opinionated-framework-comandos)
+ha sido escrita en gran parte por ChatGPT. Yo simplemente me he limitado a hacer
+pequeñas correcciones y ampliar ligeramente la información.
+
+## El contexto
+
+Para lograr un texto tan preciso, ChatGPT necesita tener en su ventana de
+contexto información tanto de la feature como del blog y la serie de entradas a
+la que pertenece.
+
+Para lograr esto, primero usé ChatGPT para que me ayudase en la implementación
+del ejecutor de comandos, de forma similar a como vimos en la entrada anterior
+sobre el uso de IA. Esto logró que la ventana de contexto fuese consciente de la
+funcionalidad recién implementada y supiese cómo se utiliza.
+
+Ahora toca hacer que ChatGPT sea consciente de la existencia del blog y de la
+serie de entradas. Para ello preparé un sencillo prompt y se lo envié en el
+mismo chat que usé para implementar la feature:
+
+> Now, I'll send you a series of six posts in Spanish about a progress of
+developing a framework in C#. Due length of the post, simply store it in your
+context window and respond me with a single phrase "Ok, I read it and stored it
+in my context window".
+>
+> After you got all posts, I instruct you to write a post about a new feature:
+The commands.
+
+ChatGPT me respondió con lo siguiente:
+
+> Sure, I'm ready to receive the posts. 
+
+Tras ello, le fui enviando uno a uno todas las entradas de la serie y le pedí
+que redactase una entrada. El resultado, aunque no es exactamente el mismo
+porque luego apliqué varias modificaciones a mano, es [la última entrada que
+escribí](https://iokode.blog/post/2023/opinionated-framework-comandos).
+
+## La conversación
+
+Puedes leer la conversación completa desde [este
+enlace](https://shareg.pt/n6UAnRh). Por supuesto, también he hecho uso de
+ChatGPT para corregir esta entrada y, aquí dejo [el enlace a la
+conversación](https://shareg.pt/XmaD1Ui).

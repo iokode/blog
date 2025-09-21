@@ -1,0 +1,137 @@
+---
+title: "Arquitectura limpia ¿opinionada?"
+slug: arquitectura-limpia-opinionada
+author: montyclt
+publishDate: 2023-02-11
+license: CC BY 4.0
+discussionId: 35
+tags:
+ - spanish-legacy-post
+series: legacy-opinionated-framework
+---
+
+Hasta ahora hemos hablado de las opiniones de un framework, pero estas suelen
+ser bypasseadas cuando se aplica [arquitectura
+limpia](https://www.amazon.es/dp/8441539901). Poco importa que tu framework
+incluya un contrato para el envío de notificaciones si tu capa aplicación no
+depende de él y por lo tanto no lo puede utilizar directamente. Poco importa la
+forma en la que el framework valide los datos de entrada si tu capa de
+aplicación va a hacerlo de otra forma diferente.
+
+Cuando se aplica arquitectura limpia, en las capas de aplicación y dominio se
+proporcionan una serie de interfaces que luego desde la capa de infraestructura
+llamarán a los servicios del framework.
+
+Veamos esto con un ejemplo.
+
+Creamos un caso de uso que se encarga crear un cliente, guardarlo en un medio de
+persistencia y luego enviar un correo electrónico a este cliente.
+
+```csharp
+public class CreateCustomerUseCase
+{
+    public void Invoke(CustomerModel model)
+    {
+        var customer = model.Create();
+        PersistentStorage.Save(customer);
+        EmailSender.Send(new WelcomeEmail(customer));
+    }
+}
+```
+
+Ahora véamos que es lo que hacen los métodos `Save` y `Send` :
+
+```csharp
+public static void Send(Email email)
+{
+    var sender = Locator.Resolve<IEmailSender>();
+    sender.Send(email);
+}
+
+public static void Save(object entity)
+{
+    var storage = Locator.Resolve<IPersistentStorage>();
+    storage.Save(entity);
+}
+```
+
+Como se puede observar, estos métodos estáticos son simples fachadas hacía una
+interfaz que proveé nuestra aplicación, pero que tendrá que ser implementada en
+la capa de aplicación utilizando el mecanismo que el framework provea. Ahora
+pongamos como ejemplo la implementación de la interfaz IEmailSender en la capa
+de infraestructura utilizando un framework que proveé su contrato para enviar
+emails e inyección de dependencias como forma de resolverlos.
+
+```csharp
+public class AppEmailSender : Application.IEmailSender
+{
+    private Framework.IEmailSender _EmailSender;
+
+    public AppEmailSender(Framework.IEmailSender emailSender)
+    {
+        _EmailSender = emailSender;
+    }
+
+    public void Send(Application.Email email)
+    {
+        var frameworkEmail = new Framework.Email()
+        {
+            From = "myapp@example.com",
+            To = email.To,
+            Content = email.Content
+        };
+
+        _EmailSender.Send(frameworkEmail);
+    }
+}
+```
+
+## ¿Por qué no se usan unas interfaces comunes?
+
+Generalmente porque este enfoque permite adaptar estos servicios al dominio
+concreto de la aplicación. Es posible que un email no sea exactamente lo mismo
+en un tipo de aplicación que en otro ni tampoco las operaciones sobre el mismo.
+
+## ¿Qué problema hay con esto?
+
+El principal problema de este enfoque es que requiere un aburrido y repetitivo
+trabajo de escribir una serie de interfaces y valueobjects/estructuras (como la
+clase Email en este caso) similares por cada proyecto que se inicie.
+
+## Conclusión
+
+En mi opinión esa flexibilidad no componsa ya que un email en casi cualquier
+aplicación será un mensaje compuesto de texto plano y/o HTML, una dirección de
+origen, una de destino, direcciones en copia y copia oculta y archivos adjuntos.
+
+Esto supone repetir las clases e interfaces para cada uno de los proyectos que
+inicias, tarea que puede ser especialmente pesada, sobretodo para aquellas
+clases que tienen que [mantener sus
+invariantes](https://blog.koalite.com/2014/01/diseno-por-contrato/).
+
+En el supuesto caso de que tu aplicación muy especifica entienda otra cosa por
+email, siempre puedes crear tu clase de dominio y obviar la clase proporcionada.
+
+## IOKode.OpinionatedFramework
+
+Yo tengo una opinión de como debería de ser un proyecto de dominio y aplicación
+y he querido hacer un framework que la reespalde. Este dispone de una librería
+de validación, un contenedor de dependencias para la capa de dominio aislado del
+contenedor de Microsoft, una serie de contratos para servicios comunes así como
+fachadas para acceder directamente a ellos.
+
+El framework está aún en fase muy temprano de desarrollo y por lo tanto aún no
+está disponible en NuGet, pero el repositorio de desarrollo es público en
+GitHub.
+
+### OpenSoruce y licencia abierta
+
+[El código fuente está disponible en
+GitHub](https://github.com/iokode/OpinionatedFramework) y la licencia es BSD de
+2 cláusulas, lo que permite su uso ilimitado en proyectos tanto cerrados como
+abiertos.
+
+### ¿Quieres colaborar?
+OpinionatedFramework es un proyecto open source [alojado en
+GitHub](https://github.com/iokode/OpinionatedFramework). Si quieres colaborar en
+el desarrollo, puedes enviar una pull request.

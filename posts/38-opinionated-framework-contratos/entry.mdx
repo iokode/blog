@@ -1,0 +1,91 @@
+---
+title: "OpinionatedFramework: Contratos y fachadas"
+slug: opinionated-framework-contratos
+author: montyclt
+publishDate: 2023-02-14
+license: CC BY 4.0
+discussionId: 38
+tags:
+ - spanish-legacy-post
+series: legacy-opinionated-framework
+---
+
+Los contratos son una serie de interfaces en el core de OpinionatedFramework que
+pueden ser localizadas desde el propio Service Locator estático de
+OpinionatedFramework y están pensados para optimizar el desarrollo de
+aplicaciones.
+
+Generalmente, cuando se inicia el desarrollo de una nueva aplicación, se
+escriben en capa de dominio una serie de interfaces que casi toda aplicación
+tiene que serán implementadas en capa de infraestructura con diversas
+funcionalidades comunes: envíar notificaciones, lanzar tareas en segundo plano,
+lanzar eventos, escribir logs, etc.
+
+El framework al incluir todos estos contratos, evita la aburrida tarea de tener
+que crear tus propias interfaces para ello al inicio del desarrollo de una
+aplicación
+
+La implementación de los mismos es una cuestión de infraestructura y no de
+dominio.
+
+## Fachadas
+
+Las fachadas son un acceso estático para hacer más cómodo el uso de servicios.
+No están directamente relacionadas con los contratos, ya que cualquier servicio
+puede ser utilizado desde una fachada, sin embargo el framework proporciona
+fachadas de todos sus contratos.
+
+Por ejemplo, la interfaz `IEmailSender` puede ser utilizada desde la fachada
+estática `Email`, haciendo que ambos fragmentos de código sean equivalentes
+(excepto porque la fachada añade una llamada extra el stack trace):
+
+```csharp
+await Locator.Resolve<IEmailSender>().SendAsync(new CustomerCreatedEmail());
+```
+
+```csharp
+await Email.SendAsync(new CustomerCreatedEmail());
+```
+
+La fachada internamente simplemente hace esto:
+
+```csharp
+public static class Email
+{
+    public static async Task SendAsync(Email email, CancellationToken cancellationToken = default)
+    {
+        await Locator.Resolve<IEmailSender>().SendAsync(email, cancellationToken);
+    }
+}
+```
+
+### Creando fachadas
+
+Reescribir todas las firmas de un método de una interfaz puede ser un trabajo
+muy aburrido, es por ello que el framework proporciona un souce generator que se
+encarga de crear la fachada a partir de una interfaz. Simplemente hay que añadir
+el atributo `AddToFacade` a la interfaz y la magia del generador se encarga de
+todo lo demás.
+
+Por volver al ejemplo del contrato anterior, tiene este atributo, por lo que la
+fachada que se genera se llama Email:
+
+```csharp
+[AddToFacade("Email")]
+public interface IEmailSender
+{
+    public Task SendAsync(Email email, CancellationToken cancellationToken);
+}
+```
+
+### Fachadas multiservicio
+
+El generador de fachadas está diseñado para poder generar una misma fachada para
+varios servicios, siempre y cuendo la interfaces de tengan un método con la
+misma firma (tipo de retorno + nombre + parametros) exacta.
+
+En el core del framework esto se da con los contratos `IJobEnqueuer` e
+`IJobScheduler`, dos contratos que se añaden a la fachada `Job`.
+
+En caso de conflicto de firma, un analizador de Roslyn genera un error y el
+proyecto no compila. ¡Incluso te lo marca con un subrayado rojo en el IDE!

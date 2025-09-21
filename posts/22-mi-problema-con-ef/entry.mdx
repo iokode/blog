@@ -1,0 +1,126 @@
+---
+title: "Mi problema con Entity Framework"
+slug: mi-problema-con-ef
+author: montyclt
+publishDate: 2022-07-08
+license: CC BY 4.0
+discussionId: 22
+tags:
+ - spanish-legacy-post
+---
+
+En mi última entrada, escribí esto:
+
+> Yo, por ejemplo, nunca he usado [Entity
+Framework](https://docs.microsoft.com/es-es/ef/) más allá de unas pocas pruebas,
+en las que vi que no era la herramienta que mejor se adecuaba a las necesidades
+de mi proyecto, y en su lugar, elegí [NHibernate](https://nhibernate.info/), y
+más adelante, [RavenDB](https://ravendb.net/) como solución para gestionar la
+persistencia.
+
+Cuando creé mi primer proyecto serio que requería persistencia con ASP.NET Core,
+seguí la opción obvia y recomendada por todo el mundo, usa Entity Framework como
+ORM para gestionar la persistencia, y eso fue lo que hice, sin embargo, al poco
+tiempo me di cuenta de que no cubría una importante necesidad, y tuve que
+reemplazarlo por NHibernate.
+
+Comencé el proyecto utilizando Entity Framework Core, y al principio todo
+parecía ir bien, se trata de un ORM con un API relativamente sencillo de
+utilizar.
+
+## ¿Cómo se usa Entity Framework?
+
+El punto de interacción con Entity Framework es la clase DbContext, la cual es
+una clase abstracta que hace de [unidad de
+trabajo](https://iokode.blog/post/2022/los-patrones-repositorio-y-unidad-de-trabajo)
+y se debe de extender definiendo en ella cada una una de las entidades en forma
+de propiedades `DbSet<T>`, donde cada una de estas propiedades es una colección
+que actúa como repositorio.
+
+Imaginemos una clásica aplicación de facturación compuesta por dos aggregate
+roots, factura (invoice) y presupuesto (quotation). El DbContext se definiría de
+la siguiente manera:
+
+```cs
+public class AppDbContext : DbContext
+{
+    public DbSet<Quotation> Quotations { get; set; }
+    public DbSet<Invoice> Invoices { get; set; }
+}
+```
+
+A partir de este momento, se puede utilizar de la siguiente forma:
+
+```cs
+// Obtener un presupuesto, modificarlo y crear una factura a partir de él:
+using var db = new AppDbContext();
+var quotation = await db.Quotations.Where(x => x.Id == 1).FirstAsync();
+var invoice = Invoice.CreateFromQuotation(quotation);
+db.Invoices.Add(invoice);
+quotation.IsConvertedToInvoice = true;
+await db.SaveChangesAsync();
+```
+
+Al llamar a `db.SaveChangesAsync()`, los cambios locales del DbSet, que es una
+colección en memoria, se persisten en la base de datos a través de una
+transacción, en este caso, actualizaría el presupuesto e insertaría la factura,
+en la misma transacción.
+
+## ¿Cuál es mi problema con ello?
+Entity Framework es relativamente sencillo de usar, es potente e implementa por
+sí mismo los patrones repositorio y unidad de trabajo. El problema es que para
+definir la clase DbContext, **necesitas** conocer previamente que entiedades
+existirán, para así añadir las correspondientes propiedades en forma de
+`DbSet<T>`.
+
+El proyecto del que hablaba antes, que tras comenzarlo con Entity Framework tuve
+que migrarlo a NHibernate, uno de sus requisitos es que el proyecto debía de
+admitir la carga de plugins que extendieran sus funcionalidades.
+
+Estos plugins, entre otras cosas, podían definir sus propias entidades, pero no
+tienen forma (al menos sin usar [magia
+negra](https://docs.microsoft.com/es-es/dotnet/api/system.reflection.emit?view=net-6.0))
+de modificar la clase AppDbContext que está disponible en el core de la
+aplicación.
+
+Sí que es cierto que podría entonces crear un DbContext por cada plugin, pues
+nada impide que una aplicación tenga varias instancias de un DbContext, pero
+entonces las operaciones realizadas por cada uno de ellos, se realizarían en su
+propia transacción, y otro de mis requisitos es que si un plugin contiene una
+acción que modifica un presupuesto y una de sus propias entidades, debería de
+hacerse ambas operaciones sobre la misma transacción.
+
+## ¿Cómo NHibernate resuelve esto?
+En NHibernate se implementa el patrón unidad de trabajo a través de una clase
+llamada `Session`, que sería el equivalente al `DbContext` se Entity Framework.
+
+La diferencia fundamental (al menos para este caso) es que la sesión no es una
+clase abstracta que debas de extender para definir con qué entidades puede
+tratar, si no que puede trabajar directamente con cualquier entidad gracias a
+una serie de métodos genéricos.
+
+La forma de hacer la misma operación de arriba con NHibernate es la siguiente:
+```cs
+// Obtener un presupuesto, modificarlo y crear una factura a partir de él:
+using var session = OpenSession();
+
+// El método Load<T> permite obtener una entidad por ID,
+// el método Query<T> permite hacer una query vía LINQ.
+var quotation = await session.LoadAsync<Quotation>(1);
+
+var invoice = Invoice.CreateFromQuotation(quotation);
+
+// El método Save inserta la entidad en la colección en memoria
+// y le asigna un ID,
+await session.SaveAsync(invoice);
+quotation.IsConvertedToInvoice = true;
+
+// El método Flush sincroniza los cambios con la base de datos
+// en una transacción. Es el equivalente a SaveChanges de EF.
+await session.FlushAsync();
+```
+
+Como se puede observar, no es necesario que la sesión defina las entidades, si
+no que puede hacer uso de estas a través de métodos genéricos, de forma que
+ahora puedo cargar un DLL en tiempo de ejecución en mi aplicación con nuevas
+entidades, y la misma sesión será capaz de tratar con ellas sin problema.

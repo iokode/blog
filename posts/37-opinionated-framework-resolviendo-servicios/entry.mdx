@@ -1,0 +1,175 @@
+---
+title: "OpinionatedFramework: Resolviendo y registrando servicios"
+slug: opinionated-framework-resolviendo-servicios
+author: montyclt
+publishDate: 2023-02-14
+license: CC BY 4.0
+discussionId: 37
+tags:
+ - spanish-legacy-post
+series: legacy-opinionated-framework
+---
+
+Toca hablar de como en OpinionatedFramework se registrar y resuelven servicios,
+algo importantisimo ya que todos los contratos que el propio framework trae
+consigo mismo son servicios registrados y las fachadas son clases que tienen que
+resolver estos servicios.
+
+Pero antes de ello, vamos a hablar de distintas formas de resolver servicios.
+
+## La inyección de dependencias por constructor
+
+Este es, probablemente, el patrón de diseño más extendido cuando se trata de
+resolver servicios. Estos se inyectan directamente en el constructor de la clase
+asegurandote que cuando la clase sea construída, posea todos los servicios de
+los que esta depende (dependencias).
+
+La principal ventaja de usar este patrón es que tu clase queda totalmente
+desacoplada del mecanismo que utilices para instanciarla. Esta clase no es
+consciente ni tiene porque ser consciente de que existe (o no) un contenedor que
+se encargue de crear las instancias.
+
+Además permite crear la instancia directamente usando la palabra `new`, lo que
+puede ser útil para utilizarla en un proyecto sencillo que no requiera de un
+contenedor de dependencias.
+
+Si estás escribiendo un componente de una librería que requiera de un servicio,
+esta debería de ser la forma por defecto de hacerlo y, así es como lo hice
+cuando diseñé el componente
+`[WordGenerator](https://github.com/iokode/inake/blob/main/IOKode.Inake/WordGenerator.cs#L19)`
+de la librería [Inake](https://github.com/iokode/inake).
+
+### ¿Qué problemas tiene la inyección de dependencias por constructor?
+
+La inyección de dependiencias por constructor no está exenta de problemas. Bajo
+mi punto de vista esta tiene cuatro problemas principales:
+
+- **Dificultad de instanciación de objetos**: Aunque se pueden crear las
+  instancias manualmente con la plabara `new`, la dificultad de instanciar una
+  clase con sus dependencias (y las dependencias de las dependencias) hace que
+  de forma prácticamente obligatoria tengamos que hacer uso de un contenedor que
+  se encargue de crear las instancias mediante técnicas de reflexión.
+- **Imposibilidad de uso en clases estáticas**: Las clases estáticas no tienes
+  constructores, lo que prácticamente hace imposible que esta pueda depender de
+  servicios. Ello te obliga a hacer dinámicas y necesitar una instancia de una
+  clase que por su funcionalidad tendría sentido que sea una clase estática,
+  como puede serlo una factoría.
+- **Dificultad de inyección en entidades**: Las entidades siempre son un dolor
+  de cabeza cuando requieren de un servicio. Por lo general están pensadas para
+  ser creadas directamente utilizando `new` y, cuando requieren de un servicio,
+  toca buscar alternativas como construirlas a través de un factoría. Este
+  problema se agrava cuando toca escribir toda una capa de mappers para que tu
+  ORM pueda deserializar datos en una entidad haciendo uso de la factoría que le
+  inyecta los servicios.
+- **Expone detalles de implementación**: A través del constructor se exponen los
+  servicios que la clase requiere para funcionar, lo que puede dar una serie de
+  pistas de como funciona. Si uso un servicio que me tiene que dar leche, no
+  quiero tener que proporcionarle la nevera de donde sacará la leche.
+
+Sobre el último punto, [hay opiniones
+contrarias](https://twitter.com/javiercampos/status/1625023444734685184). Aunque
+entiendo el razonamiento, personalmente no termino de compartirlo del todo.
+Recomiendo encarecidamente leer el hilo completo y que cada uno saque sus
+propias conclusiones.
+
+## Service Locator
+
+Otro de los patrones (o antipatrón, [según a quién le
+preguntes](https://blog.ploeh.dk/2010/02/03/ServiceLocatorisanAnti-Pattern/))
+más famosos para resolver servicios es el llamado Service Locator. Este patrón
+es bastante sencillo, simplemente consiste en llamar a una función que se
+encargue de resolver un servicio.
+
+Muchas implementaciones de este patrón no son estáticas, teniendo una forma
+similar a esta:
+
+```csharp
+public class Controller : IController
+{
+    private readonly IServiceLocator _serviceLocator;
+    public Controller(IServiceLocator serviceLocator)
+    {
+        _serviceLocator = serviceLocator;
+    }
+ 
+    public void Execute<TContext>(TContext context)
+    {
+        var command = _serviceLocator.GetInstance<ICommand<TContext>>();
+ 
+        if (!command.IsNull())
+        {
+            command.Execute(context);
+        }
+ 
+        var disposable = command as IDisposable;
+ 
+        if (disposable != null)
+            disposable.Dispose();
+    }
+}
+```
+
+Esta aproximación tiene los mismos problemas que he comentado sobre la inyección
+de dependencias (ya que en esencia, se está haciendo DI para inyectar el service
+locator). En su lugar, yo preferiría utilizar un locator estático para esto:
+
+```csharp
+public class Controller : IController
+{ 
+    public void Execute<TContext>(TContext context)
+    {
+        var command = ServiceLocator.GetInstance<ICommand<TContext>>();
+ 
+        if (!command.IsNull())
+        {
+            command.Execute(context);
+        }
+ 
+        var disposable = command as IDisposable;
+ 
+        if (disposable != null)
+            disposable.Dispose();
+    }
+}
+```
+
+Esta aproximación soluciona los problemas de arriba además de hacer la clase más
+pequeña al eliminar el constructor.
+
+### Los problemas del patrón Service Locator.
+
+Este patrón tampoco está exento de problemas. Si muchas personas lo consideran
+un antipatrón no es precisamente porque les haya dado una cruzada irracional
+contra él.
+
+El principal problema del patrón Locator es que obliga a tu aplicación a
+referenciar al contenedor (o al menos al Locator si se hace una buena
+[segregación de
+interfaces](https://devexperto.com/principio-de-segregacion-de-interfaces/)).
+Esto rompe la idea de que tu aplicación no debe de depender del framework, si no
+que este debe de ser parte de la infraestructura. Esto aquí no es un problema ya
+que todo OpinionatedFramework está diseñado para actuar sobre las capas de
+dominio y aplicación.
+
+Otro de los problemas es que [oculta las dependencias de una
+clase](https://twitter.com/montyclt/status/1624974712185974784). Esto yo es algo
+que a mi me sigue pareciendo casi más una ventaja que un inconveniente, pues
+pienso que viola el principio *[tell, don’t
+ask](https://www.danielprimo.io/blog/manual-de-buenas-practicas-tell-don-t-ask)*.
+Sin embargo, hay quién opina que hacer las dependencias explícitas es algo
+positivo. Recomiento leer el hilo de Twitter completo para profundizar más sobre
+ello.
+
+## ¿Y en OpinonatedFramework?
+
+Pues para OpinionatedFramework he optado por incluir un contenedor de depdencias
+que pueda localizar servicios utilizando un Service Locator estático. Si
+utilizas un framework como ASP.NET Core en capa de insfraestructura que incluye
+su propio contenedor de dependencias, este contenedor está aislado y es ajeno al
+mismo. Esto permite registrar aquellos servicios que tienen que ver con la
+aplicación en un contenedor y aquellos del framework en otro.
+
+El framework tiene dos clases estáticas,
+`IOKode.OpinionatedFramework.ConfigureApplication.Container` que es la encargada
+de configurar los servicios y `IOKode.OpinionatedFramework.Foundation.Locator`,
+que es la encargada de localizar los servicios previamente registrados.

@@ -1,0 +1,68 @@
+---
+title: "Axe: una extensión de navegador para probar la accesibilidad de tu sitio web"
+slug: axe
+author: montyclt
+publishDate: 2022-04-23
+license: CC BY 4.0
+discussionId: 11
+tags:
+ - spanish-legacy-post
+---
+
+Hace unos días pregunté a [Juanjo](https://accessibites.net/), que para quien no
+lo conozca, es un referente en cuanto a
+[accesibilidad](https://es.wikipedia.org/wiki/Accesibilidad_web) cómo podría
+mejorar la accesibilidad de IOKode.
+
+Tras [una agradable conversación por
+Twitter](https://twitter.com/montyclt/status/1517578605458513920?s=21&t=rbht-LevjgYEYSIX7jY83g),
+me recomendó que la testase con la extensión
+[Axe](https://www.deque.com/axe/devtools/), la cual arrojó dos problemas, que ya
+han sido solucionados:
+
+- Zoom desactivado en dispositivos móviles.
+- Contraste de colores en los enlaces y en la lista de entradas.
+
+## El problema del zoom
+Una etiqueta `<meta>` estaba prohibiendo hacer zoom en dispositivos móviles,
+algo que puede ser un problema no sólo para personas con problemas de vista, sino
+incluso para cualquiera que simplemente prefiera ver el contenido con un
+texto más grande.
+
+Lo grave aquí fue que el HTML de este sitio lo he escrito yo mismo, y no me di
+cuenta del problema que esto puede suponer.
+
+Sobre esto me gustaría destacar, que Safari en iOS permite hacer zoom
+independientemente de lo que ponga en la etiqueta `<meta>`, así que bravo a
+Apple en ese sentido.
+
+## El problema del contraste de colores
+El CSS de IOKode tiene la media query
+[`prefers-color-scheme`](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-color-scheme),
+por lo que los colores son distintos dependiendo del esquema de colores
+configurado en el sistema operativo. He modificado ligeramente los colores para
+que pasen la prueba en el esquema light. El color actual de los enlaces en la
+versión actual es más cercano al morado, frente al rosa anterior. El contraste
+con el fondo mejora, y a mí personalmente, me gusta mejor como queda ahora. En
+el esquema dark, se queda como estaba ya que pasaba la prueba sin problema.
+
+A destacar en el listado de todas las entradas, las fechas antes tenían un color
+muted que se fundía con el fondo, sin apenas contraste. He deshecho eso.
+
+Como dato curioso, la herramienta Axe sigue marcando que en los elementos del
+`header` podría haber mal contraste de color dado que no puede comprobarlo
+porque hay una imagen del fondo, pero la imagen de fondo es el logo de IOKode, y
+no toca los elementos como el eslogan o los enlaces, así que entiendo que está
+también solucionado.
+
+## Recomendación final
+
+Ambos problemas ya están solucionados en los [dos últimos
+commits](https://github.com/iokode/template/commit/787b6c9d2e3020503833c2ee6aeca33968bb08ad)
+que he hecho sobre la plantilla, y han sido desplegados sobre iokode.blog.
+
+Para terminar, me gustaría recomendar a todos los desarrolladores web que
+instalen la extensión, y prueben con ella todos sus sitios webs, y si como en el
+caso de IOKode, el CSS utiliza la media query `prefers-color-scheme`, entonces
+deberían de realizar la prueba dos veces, una con la configuración clara y otra
+con la configuración oscura.

@@ -1,0 +1,87 @@
+---
+title: "Dejemos de usar SMS para hacer 2FA"
+slug: dejemos-de-usar-sms-para-2fa
+author: montyclt
+publishDate: 2023-02-19
+license: CC BY 4.0
+discussionId: 39
+tags:
+ - spanish-legacy-post
+---
+
+Ayer Twitter anunció que la autenticación en dos pasos a través de SMS pasaba a
+estar disponible únicamente para usuarios con una subscripción de pago Blue
+activa, mientras que el resto de usuarios podrían utilizar autenticación en dos
+pasos únicamente mediante aplicación
+([TOTP](https://es.wikipedia.org/wiki/Algoritmo_de_contraseña_de_un_solo_uso_basada_en_el_tiempo))
+y dispositivos de hardware.
+
+Esta decisión despertó una ola de reacciones en su contra debido a [una muy mala
+comunicación](https://twitter.com/montyclt/status/1626919967277912067) por parte
+de la empresa que da la sensación de que quieres hacer de la seguridad una
+feature de pago.
+
+Personalmente no creo que sea el caso, ya que [la opción 2FA basada TOTP y
+hadrware sigue disponible para el resto de
+usuarios](https://twitter.com/elonmusk/status/1627059645293670401). Yo creo
+simplemente que Twitter quiere cubrir el coste de enviar SMS a través de la
+suscripción Blue. Desde que Elon Musk está a la cabeza de la compañía, una de
+sus prioridades siempre ha sido reducir los costes y los SMS no son precisamente
+baratos.
+
+Dejando de lado la decisión de Twitter y su mala comunicación, creo que esta es
+una buena oportunidad para que la industria cambie de rumbo deje de utilizar SMS
+como medio para hacer 2FA por otras opciones más seguras, como puede ser los
+tokens TOTP. Por desgracia, tal como dijo @eiximenis, [no creo que esto vaya a
+darse](https://twitter.com/eiximenis/status/1627039886015442944), al menos a
+corto plazo.
+
+## Los problemas de los SMS
+
+Todo lo anterior no tendría validez sin una explicación que lo justifique, por
+lo que creo necesario explicar cuales son los principales problemas de usar SMS
+como medio para hacer 2FA.
+
+### Costes
+
+Si echamos un vistazo a varias páginas web de servicios que ofrecen API para
+enviar SMS, podemos observar que el precio de cada mensaje ronda entre los 0,05
+€ y 0,10 € por mensaje.
+
+Si tu aplicación tiene 100 usuarios que se autentican una vez al día y cada SMS
+te cuesta 0,06 €, esto es un coste de 6 € al día, 180 € al mes y 2.160 € al año.
+
+### Ausencia de cifrado
+
+Los SMS viajan por la red GSM sin ningún tipo de cifrado. Haciendo uso de
+técnicas de falsificación de estaciones base, es posible interceptar estos
+mensajes y por lo tanto robar una clave 2FA.
+
+### SIM Swapping
+
+Este es un conocido ataque de ingeniería social que consiste en llamar a tu
+compaía teléfonica haciendose pasar por el cliente de la misma y solicitar un
+clon de la tarjeta SIM. Una vez el atacante se hace con el clon, puede recibir
+en nombre de su víctima los SMS con las claves 2FA.
+
+Desde VADAVO hemos hecho una capacitación a nuestro equipo de atención al
+cliente para evitar estos ataques a nuestros clientes en la medida de lo
+posible, sin embargo un error humano lo puede tener cualquiera, en cualquier
+compañía.
+
+## El SMS es mejor que nada
+
+Si estás utilizando un servicio que por desgracia únicamente acepta SMS como
+medio 2FA, deberías de utilizarlo, siempre acompañado de tu contraseña y no como
+sustituto de esta.
+
+## En conclusión
+
+Me gustaría aprovechar mi blog para hacer campaña a favor de dejar de utilizar
+SMS para enviar claves 2FA.
+
+Como usuarios deberíamos de configurar una aplicación como Authy, Google
+Authenticator, Microsoft Authenticator o similar y nunca SMS.
+
+Como desarrolladores deberíamos de ofrecer siempre 2FA a sus usuarios, pero
+nunca a través a SMS.

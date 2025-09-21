@@ -1,0 +1,230 @@
+---
+title: "Los patrones Repositorio y Unidad de Trabajo"
+slug: los-patrones-repositorio-y-unidad-de-trabajo
+author: montyclt
+publishDate: 2022-05-17
+license: CC BY 4.0
+discussionId: 13
+tags:
+ - spanish-legacy-post
+---
+
+El patrón repositorio permite encapsular que operaciones de persistencia se
+pueden realizar sobre una entidad. Pero antes de entrar en detalle, necesitamos
+entender que es una entidad.
+
+## ¿Qué es una entidad?
+
+Eric Evans en su libro [Domain Driven Design](https://amzn.to/3lioHYD), nos dice
+que las entidades son objetos que están definidos principalmente por su
+identidad.
+
+> An object defined primarily by its identity is called an ENTITY
+
+Esto es, objetos únicos con algún tipo de identificador. Por ejemplo, un cliente
+o una factura serían ejemplos de entidades.
+
+Aunque no tendría por qué, las entidades generalmente son objetos que se desean
+persistir más allá del ámbito de ejecución de la aplicación, y para ello se
+pueden utilizar diversos sistemas de persistencia, como base de datos o ficheros
+en disco.
+
+## ¿Qué es un repositorio?
+
+Las entidades no son todas iguales, y por lo tanto surge la necesidad de definir
+que operaciones de persistencia se pueden realizar con ellas, para ello se
+utiliza el patrón repository.
+
+Un repositorio permite abstraer el sistema de persistencia lo cual ofrece
+**tolerancia al cambio**, pero en mi opinión, más allá de eso, cumple otro
+objetivo más importante, el de **definir las operaciones** que se pueden
+realizar para un tipo concreto de entidad.
+
+En el típico ejemplo de una aplicación de facturación compuesta por presupuestos
+y facturas, ambas entidades podrían guardarse, y obtenerse, pero únicamente los
+presupuestos podrían borrarse y actualizarse.
+
+```csharp
+public interface IQuotationRepository
+{
+    Quotation GetById(QuotationId quotationId);
+    void Add(Quotation quotation);
+    void Update(Quotation quotation);
+    void Delete(Quotation quotation);
+}
+
+public interface IInvoiceRepository
+{
+    Invoice GetById(InvoiceId invoiceId);
+    void Add(Invoice invoice);
+}
+```
+
+## Patrón Unidad de Trabajo
+
+El patrón repositorio permite gestionar las operaciones que se realizarán sobre
+una entidad, pero cuando se utilizan [sistemas de persistencia
+transaccionales](https://iokode.blog/), no es capaz de gestionar por sí mismo
+múltiples operaciones en una única transacción.
+
+Para suplir esta carencia del patrón repositorio, surge el patrón Unidad de
+Trabajo, que permite mantener una lista de operaciones sobre entidades que se
+ejecutarán en una única transacción.
+
+Siempre que se vaya a realizar una operación que requiera persistir cambios,
+será necesario crear (o en su defecto, inyectar) una instancia de la unidad de
+trabajo. En este objeto se realizarán todas las operaciones de persistencia
+necesarias, y por último se confirmará o denegará la transacción.
+
+La interfaz de la unidad de trabajo quedaría de una forma similar a esta:
+
+```csharp
+public interface IUnitOfWork
+{
+    void RegisterAdded(object entity);
+    void RegisterUpdated(object entity);
+    void RegisterDeleted(object entity);
+
+    void Commit();
+    void Rollback();
+}
+```
+
+## Uso de Unit Of Work junto a Repository
+
+Su uso junto al patrón repository es opcional, pero se pueden usar en conjunto
+haciendo que las operaciones realizadas sobre un repositorio sean trackeadas por
+la unidad de trabajo.
+
+Normalmente, cuando se hace esto, la interfaz de la unidad de trabajo se reduce
+de la siguiente forma:
+
+```csharp
+public interface IUnitOfWork
+{
+    void Commit();
+    void Rollback();
+}
+```
+
+Esto se debe a que los repositorios estarán **ligados** a la unidad de trabajo,
+por lo que las operaciones de añadir, actualizar o eliminar se gestionarán desde
+el repositorio y estas se añadirán automáticamente a la unidad de trabajo en vez
+de persistirse directamente.
+
+Hay varias soluciones para ligar una unidad de trabajo a los repositorio, una de
+las más comunes es inyectar tanto el repositorio como la unidad de trabajo en el
+caso de uso y dejar que el inyector de dependencias construya ambas instancias
+ligadas:
+
+```csharp
+public class CreateCustomerUseCase
+{
+    private readonly IUnitOfWork _UnitOfWork;
+    private readonly ICustomerRepository _CustomerRepository;
+
+    public CreateCustomerUseCase(IUnitOfWork unitOfWork, ICustomerRepository customerRepository)
+    {
+        _UnitOfWork = unitOfWork;
+        _CustomerRepository = customerRepository;
+    }
+
+    public CustomerId Invoke(CreateCustomerModel model)
+    {
+        var customer = new Customer(model.Name, model.Document);
+        _CustomerRepository.Add(customer);
+        _UnitOfWork.Commit();
+
+        return customer.Id;
+    }
+}
+```
+
+He utilizado esta solución durante un tiempo, pero no me termina de gustar por
+dos motivos:
+
+- El primero es que desde el caso de uso asumimos que el repositorio y la unidad
+  de trabajo están vinculados, obligando al consumidor del caso de uso a
+  inyectar instancias ligadas. Esto además dificulta tener varias unidades de
+  trabajo ligadas a varios repositorios en el mismo caso de uso.
+- Sigueindo el motivo anterior, al leer el caso de uso no queda nada claro que
+  ambos están vinculados.
+
+Otra solución que he visto a veces por Internet, pero que nunca he usado,
+consiste a que el repositorio sea una propiedad de la unidad de trabajo:
+
+```csharp
+public class CreateCustomerUseCase
+{
+    private readonly IUnitOfWork _UnitOfWork;
+
+    public CreateCustomerUseCase(IUnitOfWork unitOfWork)
+    {
+        _UnitOfWork = unitOfWork;
+    }
+
+    public CustomerId Invoke(CreateCustomerModel model)
+    {
+        var customer = new Customer(model.Name, model.Document);
+
+        // El repositorio es una propiedad definida
+        // en la interfaz de la unidad de trabajo.
+        var customerRepository = _UnitOfWork.CustomerRepsotory;
+
+        customerRepository.Add(customer);
+        _UnitOfWork.Commit();
+
+        return customer.Id;
+    }
+}
+```
+
+Esta solución tampoco me gusta, ya que obliga a modificar la interfaz de la
+unidad de trabajo cada vez que se crea un nuevo repositorio, algo que no es nada
+deseable, y absolutamente demoledor cuando hacemos aplicaciones modulares, en
+las que plugins externos contienen nuevas entidades y repositorios.
+
+Por último, la opción que me gusta, es añadir a la unidad de trabajo un método
+`GetRepository` al cual se le indica el tipo de repositorio:
+
+```csharp
+public class CreateCustomerUseCase
+{
+    private readonly IUnitOfWork _UnitOfWork;
+
+    public CreateCustomerUseCase(IUnitOfWork unitOfWork)
+    {
+        _UnitOfWork = unitOfWork;
+    }
+
+    public CustomerId Invoke(CreateCustomerModel model)
+    {
+        var customer = new Customer(model.Name, model.Document);
+
+        // Aquí la unidad de trabajo es capaz de crear cualquier
+        // tipo de repositorio de ligarlo, aunque este venga
+        // desde un ensamblado externo.
+        var customerRepository = _UnitOfWork.GetRepository<ICustomerRepository>();
+
+        customerRepository.Add(customer);
+        _UnitOfWork.Commit();
+
+        return customer.Id;
+    }
+}
+```
+
+## Algunas lecturas recomendadas
+
+- Libro [Persistencia orientada a
+  objetos](http://catalogo.info.unlp.edu.ar/meran/opac-detail.pl?id1=5895) de
+  **Javier Bazzocco**.
+- Serie de entradas sobre repositorios de **Juan María Hérnandez**:
+    - [El repositorio
+      genérico](https://blog.koalite.com/2011/11/repositorios-el-repositorio-generico/).
+    - [El repositorio
+      concreto](https://blog.koalite.com/2011/11/tipos-de-repositorio-el-repositorio-concreto/).
+    - [El
+      no-repositorio](https://blog.koalite.com/2011/12/tipos-de-repositorio-el-no-repositorio/).
+    - [Separación de
+      responsabilidades](https://blog.koalite.com/2011/12/tipos-de-repositorio-separacion-de-responsabilidades/).

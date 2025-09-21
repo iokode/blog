@@ -1,0 +1,308 @@
+---
+title: "Versionado automático de paquetes NuGet con un sistema CI/CD"
+slug: versionado-automatico-de-paquetes-nuget-con-un-sistema-ci-cd
+author: montyclt
+publishDate: 2022-10-01
+license: CC BY 4.0
+discussionId: 29
+tags:
+ - spanish-legacy-post
+---
+
+<Alert severity="info">
+ACTUALIZACIÓN: En esta entrada se hace el versionado en base a la fecha y hora
+de la generación del paquete, sin embargo, no es la forma correcta de hacerlo.
+Lo ideal sería utilizar versionado semántico. Tras leer esta entrada, recomiendo
+leer [esta otra entrada](https://iokode.blog/post/2023/semantic-versioning) que
+actualiza el workflow aquí explicado pero utilizando versionado semántico.
+</Alert>
+
+El proyecto en el que estoy trabajando, tiene una [arquitectura de
+plugins](https://amzn.to/3RtuBUe). Un núcleo de programa es capaz de cargar
+plugins que proporcionan nuevas funcionalidades a la aplicación, y modifican el
+comportamiento actual.
+
+Para conseguir esto, los plugins no son simplemente ensamblados aislados, si no
+que dependen de unos paquetes NuGet que expone la aplicación. Dependiendo de lo
+que haga el plugin, este tiene como dependencia uno o más de estos paquetes. Por
+regla general, estos paquetes simplemente contienen interfaces que los plugins
+implementan.
+
+Lo que estábamos haciendo en el equipo de desarrollo hasta ahora, es que cada
+vez que hacíamos un cambio en alguno de los paquetes, actualizábamos a mano la
+propiedad `<PackageVersion>` del fichero *.csproj. Un workflow en [GitHub
+Actions](https://github.com/features/actions) detectaba este cambio en cada
+commit, y si era superior al anterior, ejecutaba `dotnet pack` para generar un
+paquete nuevo.
+
+Sin embargo, ha llegado un punto en el que realizar este cambio de versión a
+mano es inviable, y hemos optado por **automatizarlo**.
+
+## Versionado del paquete NuGet
+Para lograr esta automatización, lo que hemos hecho es eliminar la propiedad
+`<PackageVersion>` de los ficheros *.csproj de cada uno de los proyectos. Una
+vez hecho esto, es necesario indicar la versión al generar el paquete.
+
+Esto se logra con el parámetro `-p:PackageVersion` del comando `dotnet pack`.
+
+Para asegurar de que la versión siempre será incremental, esta contiene la fecha
+y hora actual, en el siguiente formato: {año}.{mes}.{dia}.{segundos del día /
+2}.
+
+Cuando se hace un push a master, la versión adquiere esta forma:
+`2022.09.30.1244`, mientras que cuando se hace un push a otra rama, adquiere
+esta forma: `2022.09.30.1244-branch22`, donde 22 es el número de la issue
+asociada a esa rama.
+
+Es importante recalcar que según las reglas de NuGet, cuando la versión de un
+paquete contiene un sufijo como `-branch22` o `beta1`, [este paquete es
+considerado como una
+prerelease](https://learn.microsoft.com/en-us/nuget/create-packages/prerelease-packages).
+
+## Versionado de los ensamblados
+Por comodidad, y sobre todo para obtener mejores trazas de lo que ocurre en
+runtime, hemos decidido que la versión de los ensamblados debe de coincidir con
+la versión del paquete.
+
+Ahora bien, resulta que las reglas de versionado de los paquetes y de los
+ensamblados son diferentes. La versión de un ensamblado se compone de cuatro
+números enteros separados por un punto. Estos cuatro números, están pensado para
+hacer [versionado semántico](https://semver.org/lang/es/), pero en mi caso, voy
+a seguir la regla de arriba.
+
+Originalmente, en el último dígito puse el número de segundos al día, pero
+cuando mi workflow se ejecutaba, había veces que me daba error y no entendía el
+motivo. Mi compañero de trabajo @Angeling3 lo investigó y descubrió que se debe
+a que [el número máximo por cada parte es de
+65535](https://learn.microsoft.com/es-es/archive/blogs/msbuild/why-are-build-numbers-limited-to-65535),
+mientras que un día tiene un total de 86400 segundos, lo que sobrepasa 65535. Al
+dividir entre dos, nos da 42200, un número por debajo de los 65535 y, por lo
+tanto, válido.
+
+El comando `dotnet build` por defecto utiliza la variable de entorno `Version`
+como versión de los ensamblados que genera, por lo que un paso anterior del
+workflow, se encarga de almacenar la versión en dicha variable de entorno.
+
+## Generación de paquetes para otras ramas
+Por mi experiencia, ha ocurrido que, trabajando en alguna funcionalidad de un
+plugin, para hacerla se ha necesitado hacer cambios en las clases e interfaces
+que exponen los paquetes (sobre todo en los momentos más jóvenes del proyecto).
+
+Cuando esto ocurre, abrimos una issue en el proyecto correspondiendo al paquete
+e implementamos los cambios en una rama nueva con un nombre similar a
+`#32-some-changes`, donde 32 es el número correspondiente a la issue y
+“some-changes” una descripción del cambio.
+
+Aquí lo importante es el número 32 en el nombre de la rama, pues el workflow
+extrae ese número y lo añade a la versión del paquete. Al ser un cambio en una
+rama que no corresponde a la rama principal, este paquete se crea en modo
+prerelease, y su versión sería `2022.09.30.34221-branch32`.
+
+En el caso de GitHub Actions, el nombre de la rama viene en la variable de
+entorno
+[`GITHUB_REF_NAME`](https://docs.github.com/es/actions/learn-github-actions/environment-variables#default-environment-variables),
+pero en otros sistemas CI/CD, puede ser diferente.
+
+## El script final
+Mi script final (en formato GitHub Actions) es el siguiente:
+
+  ```yml
+  name: Create NuGet packages
+  
+  on:
+    push:
+      branches:
+        - "**"
+  
+  jobs:
+    build:
+  
+      runs-on: ubuntu-latest
+  
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+  
+        - name: Setup .NET
+          uses: actions/setup-dotnet@v2
+          env:
+            NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            source-url: https://nuget.pkg.github.com/vadavo/index.json
+            include-prerelease: false
+            dotnet-version: "6.0.*"
+  
+        - name: Set environment variables
+          shell: pwsh
+          working-directory: "./src"
+          run: |
+            function Set-GitHubEnvironmentVariable {
+              param (
+                [Parameter(Mandatory = $True)]
+                [string] $name,
+            
+                [Parameter(Mandatory = $True)]
+                [string] $value
+              )
+  
+              Write-Output "$name=$value" | Tee-Object $env:GITHUB_ENV -Append | Out-Null
+              Write-Host "Environment variable set: $name = $value"
+            }
+  
+            $now = [System.DateTimeOffset]::UtcNow
+            $version = $now.ToString("yyyy.MM.dd.") + [int]($now.TimeOfDay.TotalSeconds / 2)
+            $packageVersion = $version
+  
+            $isMasterBranch = $env:GITHUB_REF_NAME -eq "master"
+            if (-not $isMasterBranch) {
+              $env:GITHUB_REF_NAME -match '#(?<BranchNumber>\d+)'
+              $packageVersion = $version += "-branch-$($Matches.BranchNumber)"
+              Set-GitHubEnvironmentVariable 'BranchNumber' $Matches.BranchNumber
+            }
+  
+            Set-GitHubEnvironmentVariable 'IsMasterBranch' $isMasterBranch.ToString()
+            Set-GitHubEnvironmentVariable 'Version' $version
+            Set-GitHubEnvironmentVariable 'PackageVersion' $packageVersion
+  
+        - name: Restore
+          shell: pwsh
+          working-directory: "./src"
+          run: |
+            dotnet restore
+  
+        - name: Build
+          shell: pwsh
+          working-directory: "./src"
+          run: |
+            dotnet build -c Release --no-restore
+  
+        - name: Pack
+          shell: pwsh
+          working-directory: "./src"
+          run: |  
+            dotnet pack -c Release --no-build --no-restore -p:PackageVersion=$env:PackageVersion --output ../nupkgs
+  
+        - name: Push
+          shell: pwsh
+          working-directory: "./nupkgs/"
+          run: |
+            Get-ChildItem | ForEach-Object {
+              dotnet nuget push $_.Name --skip-duplicate
+            } 
+  ```
+
+Vamos a analizarlo poco a poco...
+
+### Paso 1: Checkout
+Este primer paso simplemente hace checkout del repositorio. Si queremos compilar
+el proyecto, necesitamos tenerlo disponible.
+
+### Paso 2: Setup .NET
+Este segundo paso instala el compilador de .NET y configura algunas opciones
+como el servidor NuGet de destino donde se van a subir los paquetes.
+
+### Paso 3: Set environment variables
+Aquí ya empieza un poco la chica. En GitHub Actions para colocar una variable de
+entorno es necesario enviarlo a un fichero cuya ruta está en la variable de
+entorno `GITHUB_ENV`. Lo primero que hace este script en PowerShell es definir
+una función llamada `Set-GitHubEnvironmentVariable`. Esta función acepta dos
+parámetros, el nombre de la variable de entorno y su valor, luego la envía al
+fichero correspondiente y muestra un mensaje por consola bastante claro con la
+variable y el valor enviado.
+
+```powershell
+function Set-GitHubEnvironmentVariable {
+    ...
+}
+```
+
+Una vez definida la función, define tanto la versión del ensamblado como la del
+paquete en base a las formulas mencionadas anteriormente, así como si se
+encuentra o no en la rama `master`.
+
+```powershell
+$now = [System.DateTimeOffset]::UtcNow
+$version = $now.ToString("yyyy.MM.dd.") + [int]($now.TimeOfDay.TotalSeconds / 2)
+$packageVersion = $version
+
+$isMasterBranch = $env:GITHUB_REF_NAME -eq "master"
+if (-not $isMasterBranch) {
+  $env:GITHUB_REF_NAME -match '#(?<BranchNumber>\d+)'
+  $packageVersion = $version += "-branch-$($Matches.BranchNumber)"
+  Set-GitHubEnvironmentVariable 'BranchNumber' $Matches.BranchNumber
+}
+```
+
+Por último, llama a la anterior función para colocar las correspondientes
+variables de entorno.
+
+```powershell
+# BranchNumber se coloca sólo en caso de que la rama no sea master.
+Set-GitHubEnvironmentVariable 'BranchNumber' $Matches.BranchNumber
+
+# Invoco el método ToString() dado que $isMasterBranch es un booleano,
+# y la función de arriba espera que ambos parámetros sean de tipo string.
+Set-GitHubEnvironmentVariable 'IsMasterBranch' $isMasterBranch.ToString()
+
+Set-GitHubEnvironmentVariable 'Version' $version
+Set-GitHubEnvironmentVariable 'PackageVersion' $packageVersion
+```
+
+Este fue el resultado de mi última ejecución:
+```
+Environment variable set: BranchNumber = 303
+Environment variable set: IsMasterBranch = False
+Environment variable set: Version = 2022.10.01.579-branch-303
+Environment variable set: PackageVersion = 2022.10.01.579-branch-303
+```
+
+### Paso 3: Restore
+Ejecuta el comando `dotnet restore`. No tiene mucho misterio.
+
+### Paso 4: Build
+Ejecuta el comando `dotnet build`. Obtiene la versión de los ensamblados que ha
+de compilar a través de la variable de entorno `Version`. Tampoco tiene mucho
+misterio.
+
+### Paso 5: Pack
+Genera los paquetes nuget a través del comando `dotnet pack`. Aquí hay tres
+cosas importantes a remarcar.
+
+La primera de ellas es que dado que se está ejecutando directamente sobre un
+fichero de solución, `*.sln` que contiene varios proyectos, se generan varios
+paquetes.
+
+La segunda de ellas es que la versión es colocada a través del modificador
+`-p:PackageVersion=$env:PackageVersion`, que obtiene la variable de entorno
+`PackageVersion`.
+
+La tercera es que en vez de generar cada paquete en la ruta por defecto (dentro
+del directorio `bin` de cada proyecto), se generan todos juntos dentro del
+directorio `../nupkgs`. Esto facilita mucho las cosas en el siguiente paso.
+
+### Paso 6: Push
+Este paso sube los paquetes al repositorio NuGet. Dado que todos los paquetes
+están juntos en el directorio `nupkgs`, simplemente necesita recorrer este
+directorio y llamar a `dotnet nuget push` por cada uno de los paquetes.
+
+## Conclusiones
+Automatizar este proceso nos ha ahorrado muchos dolores de cabeza en el equipo
+de desarrollo. Era bastante común hacer una nueva funcionalidad, y olvidarnos de
+cambiar el número de versión en unos 17 ficheros *.csproj, generando de esta
+forma que los paquetes no se actualizasen, y cuando íbamos a tirar de ellos para
+trabajar en algún plugin, tener que añadir un commit únicamente para actualizar
+la versión de los paquetes.
+
+También nos ha ocurrido más de una vez que estando el proyecto por la versión
+12, yo me pongo a trabajar en una issue, mi compañero en otra, y ambos
+actualizábamos el número de los ficheros `.*csproj` en nuestras correspondientes
+ramas, generando conflictos nada agradables a la hora de hacer merge.
+
+A partir de este momento, podemos dar un adiós para siempre a todos estos
+problemas...
+
+Por otra parte, no es oro todo lo que reluce, y es que al utilizar un sistema
+basado en fechas, hemos perdido el versionado semántico, y todo lo que ello
+aporta. Estoy investigando como puedo mantener la automatización y a su ver
+versionado semántico. Si doy con la clave, actualizaré la entrada. Si alguien ya
+dio con la clave, agradecería enormemente que dejase un comentario.

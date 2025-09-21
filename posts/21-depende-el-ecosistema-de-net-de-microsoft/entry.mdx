@@ -1,0 +1,139 @@
+---
+title: "¿Depende el ecosistema de .NET de Microsoft?"
+slug: depende-el-ecosistema-de-net-de-microsoft
+author: montyclt
+publishDate: 2022-07-06
+license: CC BY 4.0
+discussionId: 21
+tags:
+ - spanish-legacy-post
+---
+
+<Alert severity="warning">
+La mayor parte de este artículo es opinión, tanto mía como de algunas personas
+con las que tuve el placer de charlar en la DotNet 2022. Las opiniones deben de
+ser tratadas como tal. Los comentarios están abiertos para debate.
+
+Durante este artículo se menciona a _la comunidad_. Personalmente no creo en _la
+comunidad_ como un ente que pueda hacer nada, si no que es simplemente el
+conjunto de desarrolladores que trabajan con .NET.
+
+Aunque Microsoft trabaja activamente en el desarrollo de .NET y su ecosistema, y
+por lo tanto formaría parte de _la comunidad_, en el ámbito de este artículo se
+entenderá a _la comunidad_ como cualquier ente que colabore en un proyecto .NET,
+excepto Microsoft. Se le excluye en el ámbito del artículo para comparar de
+forma más precisa los proyectos que forman parte de Microsoft, con aquellos que
+no lo hacen (proyectos comunitarios).
+</Alert>
+
+En 2015, Juan María Hernandez escribió [este
+artículo](https://blog.koalite.com/2015/11/codigo-abierto-ecosistema-cerrado/)
+con su opinión sobre el ecosistema de .NET, en el que critica el hecho de que la
+mayor parte de las librerías sean desarrolladas y mantenidas por un único
+proveedor, en este caso, Microsoft.
+
+Siete años después, la situación en el ecosistema de .NET no ha cambiado mucho
+al respecto, y los cambios que han habido han sido hacía mayor dependencia de
+Microsoft, pues algunos proyectos mantenidos por _la comunidad_ –como
+[NancyFX](https://github.com/NancyFx/Nancy), un framework de desarrollo web
+alternativo a ASP.NET Core–, han pasado a la historia.
+
+Recientemente, durante la [DotNet 2022](http://dotnet2022.com/), tuve la
+oportunidad de participar en un debate con birras y Coca-Cola _(no me gusta la
+cerveza, ya podéis expulsarme xD)_ con [Eduard
+Tomás](https://twitter.com/eiximenis), [Unai
+Zorrilla](https://twitter.com/_unaizc_) y otros que no recuerdo quienes son
+(sorry, ocupábamos cuatro mesas en el bar, y mi memoria para personas no es la
+más hábil, espero que los olvidados sean capaces de perdonarme xD) sobre el
+ecosistema de NET.
+
+## ¿Ecosistema cerrado?
+Juan María describe esta situación como un **ecosistema cerrado**, pero a mí no
+me termina de gustar esta afirmación. Desde mi modo de ver, Microsoft ofrece sus
+soluciones, pero no impide (no cierra) a que otros desarrolladores ofrezcan las
+suyas, incluso pone a su disposición de forma gratuita un servidor (nuget.org)
+donde alojar sus librerías. El usuario, [sigue teniendo total libertad de
+elección para utilizarla o no hacerlo, incluso cuando no existen
+alternativas](https://mises.org/es/wire/la-libertad-de-eleccion-es-lo-que-distingue-al-capitalismo-no-la-competencia).
+
+El hecho de que las soluciones de Microsoft destaquen sobre las demás, para mi
+no es más que una consecuencia natural de la libre elección del desarrollador.
+Simplemente, son las más elegidas por el conjunto de desarrolladores, ya sea
+porque consideran que es la mejor opción, por imposición de la empresa en la que
+trabajan, porque no hay o no conocen otra alternativa, o lo que sea.
+
+## ¿Se utilizan las alternativas?
+Durante la conversación, Eduard me hizo la siguiente pregunta: "_¿a cuánta gente
+conoces que utilices [NHibernate](https://nhibernate.info/)?_". Lo cierto es que
+no conozco a mucha, pero también es cierto que no conozco tampoco a mucha gente
+que use [Entity Framework](https://docs.microsoft.com/es-es/ef/) en su lugar.
+Aunque conozco a bastantes desarrolladores, pocos son los que trabajan con .NET,
+y los que conozco, trabajan en empresas ajenas a mí, por lo que lo que han
+podido hablar de sus proyectos, es bastante superficial.
+
+Yo, por ejemplo, nunca he usado Entity Framework más allá de unas pocas pruebas,
+en las que vi que no era la herramienta que mejor se adecuaba a las necesidades
+de mi proyecto, y en su lugar, elegí NHibernate, y más adelante,
+[RavenDB](https://ravendb.net/) como solución para gestionar la persistencia.
+
+Recuerdo que alguien en la conversación le respondió "_pues yo creo que más
+gente de la que piensas_", y lo cierto tener datos exactos es muy difícil, pero
+las estadísticas de nuget.org quizás puedan ayudarnos.
+
+Según las estadísticas de NHibernate, tiene un total de 22 millones de descargas
+y 5.000 diarias. No es que sea un gran número en comparación con los casi 170
+millones de Entity Framework y 40.000 diarias, pero no deja de ser un número
+para nada despreciable.
+
+Eduard Tomás mencionó sobre esto, que en su opinión, el ecosistema de .NET
+depende en exceso de un único vendor, de Microsoft.
+
+## Las plantillas por defecto
+Juan María menciona en su artículo de 2015 que de entre los diez paquetes más
+descargados de nuget.org, ocho son de Microsoft y uno de ellos ni siquiera se
+puede considerar un proyecto de .NET.
+
+En 2022, siete años después, de los [cien paquetes más descargados de
+nuget.org](https://www.nuget.org/stats/packages), noventa y nueve son de
+Microsoft, y sólo [uno de
+ellos](https://www.nuget.org/packages/newtonsoft.json/) es comunitario.
+
+Recuerdo mencionar este dato en el debate de las birras, y alguien dijo algo en
+lo que no caí, que esos datos están sesgados porque esos paquetes vienen en las
+plantillas por defecto. Incluso el único paquete comunitario, JSON.NET, [venía
+hasta hace poco en las plantillas por
+defecto](https://devblogs.microsoft.com/dotnet/try-the-new-system-text-json-apis/).
+
+## El caso de JSON.NET
+Recientemente, Microsoft contrató a [James
+Newton-King](https://twitter.com/jamesnk), el desarrollador del proyecto
+JSON.NET y lo integró directamente en la librería estándar.
+
+Este caso despertó todo tipos de reacciones, desde los que opinamos que JSON es
+un estándar de formato de texto y por lo tanto la librería estándar debería de
+proporcionar herramientas para interactuar con él, a otros que piensan que
+Microsoft quiere controlar todo el ecosistema y que acaba de eliminar al último
+cabo suelto.
+
+Personalmente, creo que de la mismo forma que la librería estándar incluye APIs
+para trabajar con XML, debería de incluir APIs para trabajar con JSON, y que
+mejor forma de hacerlo que introduciendo unas APIs muy similares a uno de los
+paquetes más utilizados, bien diseñadas y que muchos desarrolladores conocemos.
+
+## El soporte
+Durante el debate de las birras, Unai mencionó que la predominancia de Microsoft
+es algo positivo cuando desarrollas para empresas, pues es necesario ofrecer
+soporte sobre el desarrollo, y estos paquetes incluyen soporte por parte de
+Microsoft.
+
+Se mencionó que un [caso como el de colors.js y
+faker.js](https://www.xataka.com/aplicaciones/desarrollador-dos-librerias-open-source-populares-nodejs-ha-decidido-corromperlas-afectando-a-millones-usuarios),
+es algo que con los paquetes oficiales de Microsoft nunca te va a pasar, sin
+embargo, aunque Microsoft no vaya a sabotear sus propios paquetes, no es menos
+cierto que alguna vez los ha dejado de lado. Un ejemplo de esto, es el framework
+de desarrollo de videojuegos para .NET, [Microsoft
+XNA](https://es.wikipedia.org/wiki/Microsoft_XNA), el cual Microsoft abandonó y
+su desarrollo lo continuó _la comunidad_ bajo los proyectos
+[MonoGame](https://www.monogame.net/) y [FNA](https://fna-xna.github.io/).
+
+¿Está entonces el soporte asegurado en los paquetes que distribuye Microsoft?

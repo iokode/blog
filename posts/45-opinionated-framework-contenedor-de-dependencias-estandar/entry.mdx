@@ -1,0 +1,158 @@
+---
+title: "OpinionatedFramework: Contenedor de dependencias estándar"
+slug: opinionated-framework-contenedor-de-dependencias-estandar
+author: montyclt
+publishDate: 2023-04-16
+license: CC BY 4.0
+discussionId: 45
+tags:
+ - spanish-legacy-post
+series: legacy-opinionated-framework
+---
+
+Hacía ya un tiempo que no hablaba sobre OpinionatedFramework. No es que sea un
+proyecto abandonado, es que tengo tantas cosas a la vez, y una tan mala
+organización que apenas he tenido tiempo de trabajar en ello. Sin embargo, en
+este *diario de desarrollo* traigo un importante avance en el desarrollo del
+mismo.
+
+Como ya expresé en una [entrada
+anterior](https://iokode.blog/post/2023/opinionated-framework-resolviendo-servicios),
+opté por utilizar un service locator para resolver servicios en
+OpinionatedFramework.
+
+## La función resolvedora
+
+Inicialmente hice [una implementación que consistía registrar dentro de un
+diccionario una serie de funciones encargadas de resolver la instancia del
+servicio](https://github.com/iokode/OpinionatedFramework/blob/0d449e2cd4f7873f70b54340292f59a8c9c18659/src/IOKode.OpinionatedFramework.Foundation/Locator.cs).
+
+Esta función resolvedora sería llamada cada vez que se quiera resolver un
+servicio. Esto es una solución muy flexible que permite dentro de ella hacer
+cosas como resolver una implementación de forma condicional, siempre la misma
+instancia (*singleton*) o decidir si en ciertos contextos debe de devolver la
+misma instancia o crear una instancia nueva en otros contextos (*scoped*).
+
+Así pues, imaginemos que queremos registrar una clase llamada **`Service`**. Si
+queremos que esta clase se comporte como un *singleton* (una única instancia
+compartida entre todos los consumidores), podríamos registrar una función que
+devuelve siempre la misma instancia:
+
+```csharp
+var service = new Service();
+Container.Register<Service>(() => service);
+```
+
+Por otro lado, si queremos que la clase **`Service`** se comporte como
+*transient* (creando una nueva instancia cada vez que se solicite), podríamos
+registrar la función para que cree una nueva instancia:
+
+```csharp
+Container.Register<Service>(() => new Service());
+```
+
+## El problema de la función resolvedora
+
+Aunque la función resolvedora funciona bien, esta tiene tres problemas
+importantes:
+
+- Obliga a escribir siempre una función que devuelva la instancia del servicio.
+  Aunque con las nuevas características lambda de C# esto es cada vez más cómodo
+  de hacer, es un trabajo extra y repetitivo susceptible a errores.
+- **No es estándar**: casi cualquier paquete externo que requiera de añadir
+  servicios al contenedor, incluye métodos de extensión sobre
+  Microsoft.Extensions.DependencyInjection.IServiceCollection. Con esta
+  implementación no podemos aprovecharlos.
+- **No abstrae los scopes**: Si queremos que una instancia se resuelva siempre
+  la misma para un contexto concreto, tenemos que implementar la lógica de ello
+  dentro de esta función resolvedora. Aunque en esta entrada no vamos a hablar
+  de los scopes, en otra más adelante veremos por qué esto es importante.
+
+## La solución: una implementación basada Microsoft.Extensions.DependencyInjection
+
+Aunque se trata de un paquete NuGet y no es parte en sí de la librería estándar,
+al igual que el resto de paquetes de Microsoft en el ecosistema de .NET,
+adquiere la consideración de [estándar de
+facto](https://iokode.blog/post/2022/depende-el-ecosistema-de-net-de-microsoft).
+
+Este paquete NuGet incluye la interfaz
+`Microsoft.Extensions.DependencyInjection.IServiceCollection` que representa una
+colección de [descriptores de
+servicio](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.dependencyinjection.servicedescriptor)
+sobre la que se pueden registrar nuevos servicios. Es un estándar de facto que
+muchos paquetes añadan métodos de extensión `AddMyAwesomePackage()` sobre esta
+interfaz.
+
+## El API del contenedor de OpinionatedFramework
+
+Como ya expuse en la entrada anterior, opté por un contenedor de dependencias
+estático. El registro de estos servicios se hace desde una clase `Container`,
+que se encuentra en un paquete de configuración.
+
+La idea es que este paquete de configuración sea referenciado desde un punto de
+entrada y no desde el paquete de aplicación, mientras que la clase Locator se
+encuentra junto al resto del framework que sí está pensado para ser referenciado
+desde la capa de aplicación.
+
+La configuración se haría tal que así:
+
+```csharp
+// Se registran los servicios
+Container.Services.AddTransient<IMyService, MyService>();
+Container.Services.AddScoped<IMyOtherService, MyOtherService>();
+Container.Services.AddMyAwesomePackage();
+
+// Se inicializa el contenedor. A partir de este momento,
+// queda bloquado y no se puede registrar ni desregistrar
+// nada más.
+Container.Initilialize();
+```
+
+Y la localización se puede hacer tal que así:
+
+```csharp
+var myService = Locator.Resolve<IMyService>();
+var myOtherService = Locator.Resolve(typeof(IMyOtherService));
+
+// También se puede acceder a la instancia del service provider:
+var sp = Locator.ServiceProvider;
+```
+
+## Implementación
+
+La implementación está disponible en el repositorio de GitHub en las clases
+[Container](https://github.com/iokode/OpinionatedFramework/blob/main/src/IOKode.OpinionatedFramework.ConfigureApplication/Container.cs)
+y
+[Locator](https://github.com/iokode/OpinionatedFramework/blob/main/src/IOKode.OpinionatedFramework.Foundation/Locator.cs).
+También existe un set de tests unitarios sobre estas dos clases contenido en la
+clase
+[ContainerTests](https://github.com/iokode/OpinionatedFramework/blob/main/src/IOKode.OpinionatedFramework.Tests/Foundation/ContainerTests.cs).
+
+En [una entrada anterior hablé sobre como la IA puede ayudar al desarrollo de
+software](https://iokode.blog/post/2022/la-inteligencia-artificial-en-el-ambito-de-la-programacion)
+y me parece importante mencionar que GPT-4 ha sido de gran ayuda para la
+implementación del contenedor. Creo que es importante compartir [la conversión
+completa que me ha ayudado a la implementación de esta
+caracteristica](https://shareg.pt/9uUg2Cy).
+
+En esta conversación se pueden observar algunas diferencias como que el método
+`Container.Initialize()` está dividido en dos, o que hay menos tests unitarios
+de los que yo he añadido, pues considero que había más cosas que probar. Sin
+embargo aquí lo importante no es coger tal cual la solución que el modelo
+proveé, si no entender la solución propuesta y saber adaptarla.
+
+## Conclusión
+
+En resumen, en esta entrada he ilustrado la primera implementación inicial del
+contenedor que obligaba a registrar una función resolvedora para cada uno de los
+servicios. Aunque esta implementación funcionaba relativamente bien para las
+pruebas durante el desarrollo, como todas las pruebas de concepto, se trataba de
+una solución incompleta.
+
+En esta entrada, he narrado cómo he implementado un contenedor más completo al
+adoptar la colección de servicios de `Microsoft.Extensions.DependencyInjection`,
+lo que además mejora la integración con paquetes externos.
+
+Esto supone también un importante paso en el avance del desarrollo de
+[OpinionatedFramework](https://github.com/iokode/OpinionatedFramework), que cada
+vez está más cerca de ser lanzado.

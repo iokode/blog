@@ -1,0 +1,239 @@
+---
+title: "Abro debate: ¿Cómo serializar correctamente las entidades?"
+slug: debate-como-serializar-correctamente-las-entidades
+author: montyclt
+publishDate: 2023-04-08
+license: CC BY 4.0
+discussionId: 44
+tags:
+ - spanish-legacy-post
+---
+
+En esta entrada, más que exponer algo sobre mi experiencia, me gustaría abrir un
+debate sobre la forma correcta de serializar tus entidades –o cualquier objeto o
+estructura– para poder ser reconstruido en un futuro, incluso durante la
+ejecución otra instancia de la aplicación.
+
+La entrada la voy a orientar al mundo de .NET porque es aquel en el que tengo
+más experiencia, pero esto podría ser aplicable y debatible con cualquier otro
+lenguaje de programación.
+
+## Algo de introducción a la arquitectura
+
+Para abrir el debate, necesitamos un poco de contexto de cómo sería la
+arquitectura de la misma. Esto es sólo un ejemplo y no representa una
+arquitectura real, pero nos sirve para orientarnos.
+
+Por una parte, nuestras entidades están diseñadas para mantener sus invariantes
+por sí mismas. Esto requiere que cada vez que se quiera modificar algo de las
+mismas, sea necesario cargar la entidad entera en memoria.
+
+Habrá un componente –al que llamaremos repositorio– que se encargará de cargar y
+persistir la entidad. En este ejemplo nos vamos a quedar aquí y no vamos a meter
+más complejidad con otros elementos como una unidad de trabajo porque es
+irrelevante. Por simplicidad, lo expresaré como una clase estática, ya que para
+esto también es irrelevante si es una interfaz o si hay inyección de
+dependencias.
+
+Tampoco importa dónde y cómo se almacena la entidad, si va a una base de datos,
+al disco duro en forma de fichero o a una [tarjeta
+perforada](https://es.wikipedia.org/wiki/Tarjeta_perforada). Lo único que nos
+importa es que hace el repositorio para serializar y deserializar la entidad.
+
+### Las entidades
+
+Para ilustrar esto, necesitamos dos tipos de entidades diferentes, una simple
+que pueda reconstruirse sin problemas a través del constructor y una más
+compleja cuya reconstrucción no sea algo trivial.
+
+La entidad simple será `Person`:
+
+```csharp
+class Person
+{
+    public int Id { get; }
+    public string GivenName { get; set; }
+    public string FamilyName { get; set; }
+
+    public Person(string givenName, string familyName)
+    {
+        GivenName = givenName;
+        FamilyName = familyName;
+    }
+}
+```
+
+La entidad más compleja será `Order`:
+
+```csharp
+enum OrderState
+{
+    New,
+    Processing,
+    PendingApplication,
+    InProvision,
+    PendingCompletion,
+    Finalized
+}
+
+class Order
+{
+    // Rest of the class
+
+    private OrderState _state;
+
+    public Order(int customerId)
+    {
+        // Do some operations in the constructor.
+    }
+
+    public void SetState(OrderState state)
+    {
+        // Check if the new state can be applied and
+        // throw InvalidOperationException if it cannot.
+
+        _state = state;
+    }
+}
+```
+
+### Cargando y modificando entidades
+
+Las entidades existen para que mantengan por sí mismas sus invariantes, por lo
+que será necesario cargarla, modificarla y volverla a guardar para hacer un
+cambio. Aquí un simple ejemplo de cambio de nombre:
+
+```csharp
+var ivan = PersonRepository.GetById(1);
+ivan.GivenName = "Pedro";
+PersonRepository.Save(ivan);
+```
+
+## La primera construcción de la entidad
+
+La primera vez que se creó la entidad, tuvo que hacerse utilizando el
+constructor en algún punto de la aplicación. Incluso aunque se usase un named
+constructor, dentro de este método se llamará a un constructor privado.
+
+Técnicamente es posible instanciar una clase ignorando el constructor (más
+adelante veremos cómo), pero vamos a asumir que siempre lo usaremos, al menos en
+la primera instancia.
+
+Así pues la entidad de arriba lo podríamos construir y persistir así:
+
+```csharp
+var ivan = new Person("Ivan", "Montilla");
+PersonRepository.Save(ivan);
+```
+
+Por ahora voy a ignorar cómo se está serializando la entidad, pero más adelante
+hablaremos de ello.
+
+## Reconstrucción de la entidad
+
+A partir de aquí es donde entramos en materia de debate. De alguna forma hemos
+serializado la entidad y persistido en algún medio. Esto puede haber sido con
+serialización binaria, JSON, XML, nos da igual.
+
+Sin embargo, cuando se invoca a `FindById` toca de alguna forma reconstruir
+dicha entidad. El repositorio (o el ORM/ODM/lo que séa, en caso de que el
+repositorio abstraiga alguna de estas herramientas) necesitará reconstruir la
+entidad. En una clase tan sencilla como `Person`, podría simplemente invocar el
+constructor y pasarle ambos parámetros (ya sea de forma explícita o a través de
+reflexión).
+
+De hecho, lo que la mayoría de ORM hacen es esto, invocan el constructor vía
+reflexión y mapean el nombre del parámetro con el nombre de la columna de la
+tabla.
+
+El problema de esto llega cuando tenemos otras entidades más complejas cuyo
+mantenimiento de invariantes complican la construcción por constructor.
+
+Utilicemos para ello la clase `Order`, que está basada en un ejemplo real con el
+que me he topado. Aquí la entidad está diseñada para que siempre se inicialice
+con un estado inicial usando como modificador del mismo únicamente el ID del
+cliente. Luego será a través de métodos que comprobarán si pueden avanzar hacía
+ciertos estados concretos y mutaría la instancia en caso de ser así.
+
+Este aproximación hace mucho más complicado la deserialización cuando se usa un
+constructor y te obliga a:
+
+- O bien, crear un constructor sin parámetros privado y setters privados para
+  los campos y propiedades, que el ORM llamará vía reflexión, lo que constituye
+  un architecture leak.
+- O bien, crear una serie de mappers, converters, deserializers o como se llamen
+  según tu ORM/ODM que se encarguen analizar los datos en bruto guardados y a
+  partir de ellos ir mutando dicha entidad llamado a los métodos adecuados.
+- O bien, construir una instancia *zeroed* (sin llamar a ningún constructor) y
+  rellenar los campos (incluyendo los backing fields de propiedades
+  automáticas).
+
+## Zeroed objects
+
+Vamos a hablar un poco de esta última opción. Una instancia *zeroed* de una
+clase o estructura es aquella que se crea sin llamar al constructor y cuyos
+campos están inicializado a sus [valores por
+defecto](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/default-values).
+
+Puedes crear una instancia de una estructura zeroed simplemente utilizando el
+operador `default(StructName)`. Este operador inicializará la estructura con
+todos sus campos en su valor por defecto.
+
+En cuanto a clases, la cosa se complica un poco más, pero también es posible
+crear una instancia que no llama a ningún constrctor e inicialize todos sus
+campos al valor por defecto. Para ello puedes utilizar el método
+[`GetSafeUninitializedObject`](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.serialization.formatterservices.getsafeuninitializedobject?view=net-8.0).
+
+### Rellenando los campos
+
+Inmediatamente después de instanciar un objeto *zeroed*, se debería mutar los
+campos con los valores que tenemos persistidos para completar la
+deserialización.
+
+La forma más limpia de hacer esto es asignando el valor serializado directamente
+a cada field (y no a las propiedades, pues estas ya están respaldadas por un
+field).
+
+## Diseñar las entidades teniendo esto en cuenta
+
+A la hora de diseñar entidades, [hay que tener en cuenta como estas van a ser
+deserializadas](https://blog.koalite.com/2017/10/tu-modelo-puede-ignorar-la-persistencia-tu-no/),
+pues no lo es lo mismo diseñarlas teniendo en cuenta que el constructor sólo se
+llamará la primera vez que se instancie y no en las deserializaciones a
+diseñarlas pensando en que se tendrá que poder deserializar y mutar propiedades
+durante la deserialización.
+
+Con la primera aproximación nunca tendremos constructores sin parámetros o
+setters privados puestos ahí sólo para satisfacer a nuestro ORM, mientras que
+con la segunda opción, tendremos que tener en cuenta esos aspectos a la hora de
+diseñar entidades.
+
+Incluso aunque consigas no tener ningún tipo de architecture leak porque
+mantengas una serie de mappers en la capa de tu ORM, cuando estos mappers llamen
+a métodos para mutar el estado de la entidad, debes de tener sus posibles
+efectos secundarios.
+
+## Debatamos sobre esto
+
+Teniendo en cuenta que la mayoría (por no decir todos) los ORM y ODM
+deserializan usando un constructor, me gustaría conocer si hay algún motivo para
+ello. Quiero abrir un debate alrededor de esto para saber si lo que estoy
+planteando es una buena o mala idea.
+
+Por el momento el único problema que se me ocurre es, que al no inicializar la
+entidad usando su constructor y mutarla utilizando sus setters y métodos
+apropiados para ello, corremos el riesgo de construir una instancia que se salte
+las invariantes y cuyo valor no sea correcto.
+
+El problema que le veo a este argumento es, si la primera instancia se construyó
+usando el constructor y las futuras modificaciones siempre se han hecho
+utilizando el API que la entidad proporciona para ello, entonces nunca deberías
+de tener en tu base de datos una entidad inválida (a no ser que modifiques la
+base de datos desde fuera de tu aplicación, cosa que nunca deberías de hacer).
+
+En cuanto al beneficio de utilizar zeroed objects, lo veo clarísimo: podemos
+diseñar las entidades para que sólo se inicializen la primera vez y elimina
+todos los architecture leaks. Esto facilita la escritura de clases que
+mantendrán sus invariantes.
+
+¿Qué opináis sobre esto?

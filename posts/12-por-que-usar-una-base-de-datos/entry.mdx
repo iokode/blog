@@ -1,0 +1,131 @@
+---
+title: "¿Por qué usar una base de datos?"
+slug: por-que-usar-una-base-de-datos
+author: montyclt
+publishDate: 2022-04-25
+license: CC BY 4.0
+discussionId: 12
+tags:
+ - spanish-legacy-post
+---
+
+Cuando estaba estudiando programación en primero de
+[DAM](https://www.todofp.es/que-estudiar/loe/informatica-comunicaciones/des-aplicaciones-multiplataforma.html),
+hubo unas clases dedicadas a la lectura y escritura de ficheros. En clase
+estábamos aprendiendo a programar en Java, y por lo tanto utilizamos las API
+disponibles en el paquete `java.io` para este propósito. Paralelamente a esto,
+en la asignatura de bases de datos, estuvimos aprendiendo a administrar sistemas
+DBMS (sistema de gestión de bases de datos) y el lenguaje SQL.
+
+Durante este mismo año, fui elegido para formar parte del programa [FP
+Dual](https://www.todofp.es/como-cuando-y-donde-estudiar/como-estudiar/formacion-profesional-dual.html),
+y estuve haciendo prácticas en una empresa, donde estuvimos desarrollando un
+sistema web con PHP que persistía los datos en una base de datos MySQL.
+
+Cuando finalicé mis estudios, junto a mi colega [Duhowpi](https://duhowpi.net/)
+que estuvo enseñándome PHP, estuvimos desarrollando algunos proyectos para uso
+interno en [LMC Servers](https://statics.montyclt.net/me#lmc), y la persistencia
+elegida fue una base de datos MySQL.
+
+Poco tiempo después entré a trabajar en varias empresas, y la forma de persistir
+datos también eran bases de datos relacionales (casi siempre MySQL, aunque en un
+proyecto utilicé Oracle Database).
+
+Por aquel entonces, asumí que esta era la forma correcta de almacenar
+información, todo el mundo lo hacía así y no me pregunté por qué se estaba
+instalando un software tan complejo en un servidor, conectarlo a tu aplicación a
+través de un socket TCP, para que finalmente este software acabe guardando los
+datos en ficheros (sí, los sistemas DBMS guardan la información en ficheros).
+
+Estuve un tiempo trabajando de esta forma, y hasta que me pregunté, ¿por qué
+tanta complejidad en vez de guardar los datos directamente en ficheros? Cuando
+estudiaba, hice por mi cuenta un proyecto en Java de un juego sencillo que
+guardaba los datos en ficheros, y todo parecía funcionar perfectamente.
+
+## Entonces… ¿qué aporta un DBMS?
+No soy el primero ni seré el último en hacerme este tipo de preguntas. [Juan
+María Hernández](https://twitter.com/gulnor) también se la hizo y tiene un
+[excelente artículo sobre ello en su propio
+blog](https://blog.koalite.com/2017/10/usar-o-no-usar-una-base-de-datos/).
+
+No nos hemos vuelto locos cuando decidimos añadir tal complejidad para persistir
+información, los DBMS nos proporciona algunas cosas que no son fáciles de
+implementar:
+
+### Propiedades ACID
+- `(A)` **Atomicidad**: Esto implica que cuando una operación que requiera escribir
+  datos en múltiples sitios (múltiples ficheros, tablas, documentos, lo que
+  sea), se escriba todo o nada. Los sistemas DBMS relacionales solucionan esto
+  con transacciones entre tablas. Existen sistemas DBMS no relacionales que
+  también disponen de atomicidad, en mayor o menor grado. Por ejemplo, MongoDB,
+  proporciona atomicidad para todos los datos que forman parte de un mismo
+  documento(*), mientras que RavenDB proporciona atomicidad para todos los datos
+  de un mismo documento y entre documentos.
+- `(C)` **Consistencia**: La consistencia asegura que los datos guardados según
+  las reglas definidas. En los DBMS relacionales esto se ve claramente en los
+  tipos de datos de una columna, así como las propiedades `not null` o `unique`.
+  Allá donde se espera guardar un número, no podrá haber un texto. Allá donde se
+  espera una fecha, no podrá haber un número. Allá donde se espera que los datos
+  sean únicos, no se repetirán. Al igual que con la atomicidad, en aquellos DBMS
+  no relacionales, esto se cumple en mayor o menor grado. Por ejemplo, en
+  MongoDB se puede asegurar valores únicos mediante índices únicos, mientras que
+  RavenDB no posee esta característica.
+- `(I)` **Aislamiento**: El aislamiento se encarga de asegurar que cuando se
+  realizan múltiples operaciones a la vez que afecten a los mismos datos, estas
+  operaciones no pisen las unas a las otras. Los DBMS relacionales controlan
+  esto mediante los niveles de transaccionalidad que se encargan de bloquear
+  filas o incluso tablas enteras durante la ejecución de una operación. Otros
+  DBMS no relaciones lo implementan a su manera, RavenDB tiene los Change
+  Vectors.
+- `(D)` **Durabilidad**: Que en Windows crees un fichero y aparezca en el
+  explorer no siempre implica que los datos estén realmente almacenados en el
+  disco. Esta propiedad implica que una vez el dato ha sido escrito, el DBMS se
+  asegura de que se ha escrito en el disco.
+
+No todos los DBMS cumplen con todas las propiedades ACID. Existen algunos DBMS
+que cumplen sólo algunas de estas propiedades, y es que aunque son propiedades
+importantes en la mayoría de las aplicaciones, pueden no ser necesarias para
+algunos proyectos concretos.
+
+(*) MongoDB tradicionalmente no ofrecía atomicidad multidocumento, pero a partir
+de la versión 4.0 lo implementaron, aunque desactivado por defecto. [Más
+información en la documentación
+oficial](https://www.mongodb.com/docs/manual/core/write-operations-atomicity/).
+
+### Rendimiento
+Imaginemos que tu empresa tiene 100.000 clientes. Tu aplicación de gestión
+podría guardar un fichero por cada uno de ellos con toda la información relativa
+a este cliente. Ahora tienes la necesidad de obtener la información de uno de
+estos clientes, pero sólo conoces su número de documento de identificación.
+Hacer que tu aplicación recorra cada uno de los 100.000 ficheros, abriendo uno a
+uno y para comparar el número guardado en este, es una tarea que podría durar
+horas. Un DBMS permite indexar tus clientes por su número de documento,
+permitiendo obtener la información relativa a este cliente en menos de un
+segundo.
+
+### Seguridad
+Algunos DBMS permiten cifrar la información cuando esta se persiste, de forma
+que si los discos donde está almacenada se viesen comprometidos, acceder a ella
+requeriría de la necesidad de descifrarla. Por ejemplo, RavenDB permite [cifrar
+una base de
+datos](https://ravendb.net/docs/article-page/5.3/csharp/server/security/encryption/database-encryption)
+completa y de forma transparente para la aplicación, evitando tener que hacer
+ese trabajo desde la propia aplicación.
+
+## Conclusión
+No todos los proyectos requieran utilizar un DBMS, si estás desarrollando un
+videojuego al estilo Super Mario Bros. donde la única información a persistir es
+el nivel por el que vas y las vidas restantes, quizás no tenga mucho sentido
+utilizar un DBMS y quizás deberías almacenar esta información en un simple
+fichero de texto, sin embargo, un DBMS nos aporta ciertas características sobre
+la persistencia que en algunos proyectos pueden ser críticas y que no son algo
+sencillo de implementar. Utilizar un DBMS nos permite asegurar un rendimiento
+optimo y/o las propiedades ACID sobre la persistencia de una aplicación, sin
+tener que hacer un sobreesfuerzo en implementarlo. Es simplemente **no
+reinventar la rueda**.
+
+Por otro lado, dependiendo de los requisitos del proyecto, un DBMS puede ser más
+adecuando que otro. En [VADAVO](https://www.vadavo.com) tenemos distintos
+proyectos abiertos, y en algunos de ellos el DBMS que mejor se adapta a los
+requisitos del proyecto es PostgreSQL, mientras que, en otro de los proyectos,
+es RavenDB.

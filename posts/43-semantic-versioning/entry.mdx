@@ -1,0 +1,141 @@
+---
+title: "Por favor, usa versionado semántico en tus paquetes"
+slug: semantic-versioning
+author: montyclt
+publishDate: 2023-04-02
+license: CC BY 4.0
+discussionId: 43
+tags:
+ - spanish-legacy-post
+---
+
+Hace un tiempo publiqué [una entrada en la que explicaba cómo generar
+automáticamente paquetes NuGet con GitHub
+Actions](https://iokode.blog/post/2022/versionado-automatico-de-paquetes-nuget-con-un-sistema-ci-cd).
+
+En esa entrada utilizaba la fecha y hora actual para asegurar que la versión del
+paquete generada era cada vez superior a la anterior. Aunque ya en ella señalaba
+que la versión de los ensamblados estaba diseñado para usar [versionado
+semántico](https://semver.org/lang/es), pasé de aplicarla (grave error).
+
+Lo que expongo en aquella entrada está basado en un caso real, por lo que poco
+tiempo después de estar utilizando este sistema de versionado basado en la fecha
+de generación del paquete, empezaron a llegar los problemas.
+
+## ¿Qué es versionado semántico?
+
+Según la especificación oficial, Semantic Versioning *es un conjunto simple de
+reglas y requerimientos que dictan cómo asignar e incrementar los números de la
+versión*. Esta diseñado para software que expone un API público como podrían ser
+paquetes NuGet o npm.
+
+Recomiendo leer [la especificación completa](https://semver.org/lang/es) para
+entender todos los detalles, pero un resumen rápido es el siguiente:
+
+- La versión del paquete se compone de tres números separados por un punto,
+  llamados *major*, *minor* y *patch*.
+- Se incrementa *patch* en uno cuando se hacen cambios que NO alteran el API
+  público, de forma que el consumidor no tendrá que hacer ningún cambio.
+  Generalmente este tipo de cambios solucionan bugs.
+- Se incrementa *minor* en uno cuando se añade nuevo API público, pero el
+  anterior se mantiene compatible. Un cambio típico a esto sería añadir nuevos
+  tipos o nuevos métodos, pero manteniendo los anteriores sin tocar. El
+  consumidor debería de poder actualizar sin necesidad de tener que hacer
+  cambios. Cuando se incrementa *minor*, *patch* vuelve a cero.
+- Se incrementa *major* en uno cuando se hacen cambios incompatibles en el API
+  público. El consumidor necesitará hacer cambios para actualizar. Cuando se
+  incrementa *major*, *minor* y *patch* vuelven a cero.
+- Opcionalmente, se puede añadir un sufijo arbitrario que indica que el paquete
+  está en una versión de prelanzamiento. Por ejemplo *1.0.0-beta2* o
+  *1.0.0-brach32* son versiones previas a *1.0.0*. Siempre que haya un sufijo se
+  considerará como versión previa.
+
+## ¿Por qué usar versionado semántico?
+
+Desde la especificación oficial se explica que simplemente conociendo el número
+de versión, puedes estar seguro de que la actualización va a ser compatible con
+tu software sin necesidad de hacer ningún cambio.
+
+Personalmente, me ocurrió una vez que al actualizar un paquete de
+[Laravel](https://laravel.com/), este rompió por completo mi proyecto. Por aquel
+entonces yo no conocía las reglas de versionado semántico y aquella dependencia
+tampoco las aplicaba. Aquello me hizo perder varios días de trabajo.
+
+Pero más allá de eso, otro motivo por el cual hacer uso de versionado semántico
+–más bien, no hacer uso de versionado por fecha– es conocer de un vistazo qué
+número de versión va primero. Es mucho más fácil ordenar de un simple vistazo
+las versiones *0.0.1*, *0.0.2* y *0.0.3* que las versiones *2022.05.12.10214*,
+*2022.05.12.20236* y *2022.05.13.1025*.
+
+## Generando paquetes NuGet con versionado semántico
+
+<Alert severity="info">
+NOTA: Si no tienes intención de generar paquetes NuGet con versionado semántico, puedes dejar de leer aquí.
+A partir de aquí ya no vamos a aportar nada nuevo relacionado con el versionado semántico.
+</Alert>
+
+<Alert severity="info">
+NOTA 2: Deberías leer primero [aquella
+entrada](https://iokode.blog/post/2022/versionado-automatico-de-paquetes-nuget-con-un-sistema-ci-cd),
+ya que aquí simplemente cubriré los cambios necesarios para actualizar de
+versionado por fecha a versionado semántico.
+</Alert>
+
+Una vez explicado que es el versionado semántico y por qué deberiamos de usarlo,
+toca actualizar el script que publiqué para generar y versionar paquetes NuGet
+automáticamente.
+
+En aquel script de GitHub Action, lo que hacía es lanzar el workflow cada vez
+que había un push nuevo al repositorio. En ese instante momento, se toma la
+fecha y hora actual para generar la versión tanto de los ensamblados como de los
+paquetes.
+
+Aquí si lanzamos un workflow con cada push, la cosa se complica más porque
+tenemos dos problemas:
+
+- Identificar que parte de la versión se debe de incrementar, *major*, *minor* o
+  *patch*.
+- Conocer cuál será el siguiente digito de cada parte.
+
+Aunque es posible que esto se siga haciendo de forma automática con cada push,
+haciendo que la action revise el API pública en búsqueda de cambios y cogiendo
+el número de versión del paquete anterior, considero que es un trabajo
+excepcional.
+
+He optado en cambio por añadir un botón que lance la action de forma manual en
+el que especifique que versión tendrá. GitHub Actions permite hacer esto con el
+evento `workflow_dispatch`.
+
+Para ello vamos a modificar la sección `on` del fichero yml que define el
+workflow de la siguiente forma:
+
+```yaml
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+        type: string
+```
+
+Una vez hecho esto, ahora podremos invocar este workflow de forma manual desde
+la pestaña “Actions” de nuestro repositorio.
+
+Toca hacer más cambios, en el paso *Set environment variables* se obtiene la
+versión en base a la fecha y hora actual de la siguiente forma:
+
+```powershell
+$now = [System.DateTimeOffset]::UtcNow
+$version = $now.ToString("yyyy.MM.dd.") + [int]($now.TimeOfDay.TotalSeconds / 2)
+```
+
+Sin embargo, ahora debemos de obtenerla directamente del input, por lo que se
+simplifica de la siguiente forma:
+
+```powershell
+$version = '{{ inputs.version }}'
+```
+
+Con esto ya estaría todo, no sería necesario hacer ningún cambio más. Ahora
+simplemente debemos de lanzar el workflow de forma manual cada vez que
+necesitemos un paquete nuevo.

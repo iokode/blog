@@ -1,0 +1,89 @@
+---
+title: "Hola holita"
+slug: bienvenido
+author: montyclt
+publishDate: 2022-04-20
+license: CC BY 4.0
+discussionId: 10
+tags:
+ - spanish-legacy-post
+---
+
+Bienvenido a **IOKode**, esta es la primera entrada de este blog, habrá que
+estrenarlo con una bienvenida, ¿no?
+
+Este blog trata principalmente sobre desarrollo de software, y el contenido será
+desde posts puramente técnicos, pasando por mis propias reflexiones y opiniones
+personales, hasta documentar desafíos con los que me he encontrado y cómo me he
+enfrentado a ellos hasta solucionar problemas.
+
+## Algo de información sobre la plataforma de blogging
+Había algunas cosas que tenía claras sobre como debía ser la plataforma
+sobre la que iría montado el blog:
+
+- No quería utilizar HTML para las entradas del blog, en su lugar las escribiría
+  en [Markdown](https://daringfireball.net/projects/markdown/).
+- Se deben de poder escribir comentarios, y el usuario se deberá autenticar con
+  GitHub.
+- Quería que los comentarios se alojasen junto a la misma entrada del post, y no
+  en un servicio externo como Disqus.
+- Mantener un backup de las entradas en GitHub.
+- HTML lo más limpio posible, para ayudar al SEO.
+
+## Una plataforma de blogging montada sobre GitHub
+Aunque inicialmente iba a utilizar GitHub como backup para las entradas, pensé
+en que no sería mala idea mantener todo el contenido en GitHub, y de paso me
+ahorraría [pelearme con la
+persistencia](https://iokode.blog/post/2022/por-que-usar-una-base-de-datos).
+
+Inicialmente, se me ocurrió utilizar un [generador de documentos HTML estáticos
+a partir del contenido de un repositorio](https://jekyllrb.com/), sin embargo
+cuando GitHub introdujo la característica llamada _discussions_, se me encendió
+una bombillita en la cabeza: ¡puedo escribir cada entrada como una discusión, lo
+que me permite adjuntar fácilmente imágenes y cualquiera puede poner comentarios
+directamente en las discusiones!
+
+### ¿Por qué autenticar a los autores de comentarios a través de GitHub?
+Pensé en permitir que cualquiera pudiese dejar un comentario escribiendo
+únicamente su nombre, pero eso abría la puerta a posibles casos de suplantación
+de identidad, por lo que era necesario que el usuario esté autenticado de alguna
+forma.
+
+Descarté obligar a los usuarios a registrarse en el blog, pues eso es una
+barrera de entrada importante que haría que alguien que podría querer dejar un
+comentario, no lo haga. No sé a vosotros, pero a mí personalmente me da palo
+registrarme en un blog para participar en ello. Hay que tener en cuenta que esto
+no es foro enorme donde el esfuerzo sí que valga la pena.
+
+Dado que este blog está orientado a desarrolladores de software, y prácticamente
+cualquier desarrollador tiene una cuenta en dicho servicio, GitHub se convierte
+en el proveedor de identidad más adecuado.
+
+### Código abierto
+Tanto la [plantilla HTML/CSS](https://github.com/iokode/template) (frontend)
+como el motor de [blogging](https://github.com/iokode/butterfly) (backend) son
+de código abierto. Si quieres montar un blog basado en GitHub, puedes aprovechar
+este trabajo.
+
+Sin embargo, debes de tener en cuenta que está diseñado para este blog en
+concreto, y por lo tanto parte del código está bastante acoplado, por lo que
+sería necesario hacer algunos cambios en el código.
+
+## HTML limpio y sencillo
+Si inspeccionamos el código HTML de este sitio web, se puede observar que apenas
+tiene elementos anidados ni nombres de clases extraños. Quería que el código
+HTML fuese lo más limpio posible por las siguientes razones:
+- **Rendimiento**: no tener cientos de elementos `div` anidados puede ayudar
+  muchísimo al rendimiento del sitio web. Obviamente [no es el único
+  factor](https://github.com/iokode/butterfly/issues/1) que influye en el
+  rendimiento, pero no deja de ser un factor importante en cuanto a la carga de
+  trabajo que tiene que hacer el navegador para renderizar el sitio web.
+- **Mantenimiento**: todo el código HTML y CSS está disponible en el repositorio
+  [template](https://github.com/iokode/template). Hacer cambios sobre él es
+  relativamente sencillo al ser extremadamente simple.
+- **Accesibilidad**: No soy para nada un experto en este tema, pero me gustaría
+  que este blog fuese accesible, y creo que un lector de pantalla se
+  desenvolvería mejor con un HTML mucho más limpio que algo extremadamente
+  complejo que incluso a los navegadores estándar le cuesta interpretar. Al no
+  requerir de JavaScript, puede funcionar en dispositivos que no dependen de
+  este, por lo que da un punto extra a la accesibilidad.

@@ -1,0 +1,678 @@
+---
+title: "La inteligencia artificial en el ámbito de la programación"
+slug: la-inteligencia-artificial-en-el-ambito-de-la-programacion
+author: montyclt
+publishDate: 2022-12-05
+license: CC BY 4.0
+discussionId: 33
+tags:
+ - spanish-legacy-post
+---
+
+El contenido de este blog se escribe en
+[Markdown](https://daringfireball.net/projects/markdown/), pero hace tiempo que
+llevo dándole vueltas a la idea de cambiar a un formato igualmente ligero, pero
+algo más potente. Entre otras cosas, me interesa que se trate de un formato
+extensible. Mi colega [Alejandro
+Quirós](https://www.linkedin.com/in/alejandroquirospascual/) me recomendó que el
+echase un vistazo a [Asciidoc](https://asciidoc.org/), por lo que he estado
+durante un tiempo viéndolo y probándolo localmente.
+
+Asciidoc parece tener todo lo que necesito, es un formato de texto ligero que,
+por defecto, contiene todos los tipos de elemento de Markdown y algunos más, por
+ejemplo, los
+[*admonitions*](https://docs.asciidoctor.org/asciidoc/latest/blocks/admonitions/),
+que permiten crear cajas de advertencia o tip.
+
+Echando un ojo atrás a mis entradas, me he dado cuenta que en algunas de ellas
+hago comentarios sobre diferentes tweets, por lo que he pensado que me vendría
+bien la capacidad de poder insertar un tweet dentro de una entrada. Asciidoc por
+defecto no permite insertar un tweet, pero al ser extensible, se puede crear un
+plugin para ello.
+
+El software que transforma documentos Asciidoc en documentos HTML se llama
+[Asciidoctor](http://asciidoctor.org/) y, está escrito en
+[Ruby](https://www.ruby-lang.org/es/). Las extensiones para Asciidoctor por lo
+tanto se escriben en Ruby.
+
+## ChatGPT
+Salvo que hayas estado viviendo en una cueva los últimos días, sabrás que es
+[ChatGPT](https://chat.openai.com/chat), una inteligencia artificial
+conversational capaz de tener conversaciones a través de un chat.
+
+ChatGPT es capaz de mantener todo tipo de conversaciones manteniendo el contexto
+con los mensajes anteriores y, si se le pide, es capaz de programar.
+
+Dado que yo no tengo experiencia alguna con Ruby, he pensado en pedirle a
+ChatGPT que se encargue de programar dicha extensión por mí. Tras intercambiar
+una larga lista de mensajes pidiendole ciertos cambios, avisandole de errores
+que me ocurrían, y hacer algunos cambios a mano sobre el código generado, la IA
+ha conseguido escribir un plugin para Asciidoctor completamente funcional para
+insertar tweets en un documento.
+
+## La conversación con ChatGPT
+Lo primero que he hecho es pedirle en líneas generales lo que necesito, y esto
+es lo que ha ocurrido:
+
+> **Ivan:**
+> Can you create an Asciidoctor extension in Ruby to embed a tweet inside an
+Ascidoc document?
+
+> **ChatGPT**:
+> Yes, it is possible to create an Ascidoctor extension in Ruby to embed a tweet
+inside an Asciidoc document. To do this, you would first need to create a Ruby
+class that extends the Asciidoctor::Extensions::BlockProcessor class. This class
+would define a method for processing the tweet block in your Asciidoc document.
+>
+> To embed the tweet, you would need to use the Twitter API to fetch the tweet
+by its ID and then generate the necessary HTML code to display the tweet on the
+page. You can then use the Asciidoctor::Document#create_block method to create a
+new block containing the HTML code for the tweet and add it to the document.
+>
+> Here is an example of how this might look:
+> ```ruby
+> class TweetBlock < Asciidoctor::Extensions::BlockProcessor
+>   use_dsl
+>   named :tweet
+>   on_context :open
+> 
+>   def process parent, target, attrs
+> 	tweet_id = target
+> 	
+>     # Fetch the tweet using the Twitter API
+>     tweet = TwitterClient.fetch_tweet(tweet_id)
+> 
+>     # Generate the HTML code for the tweet
+>     html = generate_tweet_html(tweet)
+> 
+>  	# Create a new block containing the tweet HTML and add it to the document
+> 	create_block parent, :pass, html, attrs
+>   end
+> 
+>   def generate_tweet_html tweet
+>     # todo
+>   end
+> end
+> ```
+>
+> Once you have created this class, you can register it with Asciidoctor by
+adding it to the list of extensions in your Asciidoctor configuration. This will
+allow you to use the `tweet` block in your Asciidoc document to embed tweets.
+>
+> Here is an example of how you might use this extension in your Asciidoc
+document:
+> ```adoc
+> tweet::1234567890[]
+> ```
+> This would create a block containing the tweet with the ID `1234567890`, as
+fetched from the Twitter API.
+
+Por lo que podemos ver, en este código ocurren tres cosas:
+1. Utilizando el [API de Twitter para
+   Ruby](https://www.rubydoc.info/gems/twitter), obtiene el contenido del tweet.
+2. Le pasa el tweet a una función para que lo transforme en HTML.
+3. Crea un bloque de Asciidoc con el contenido HTML.
+
+Analicemos el código un poco. Una de las primeras cosas que hace es pasarle el
+ID directamente al API de Twitter, pero no comprueba que sea válido (númerico),
+así que se lo hago saber a la IA.
+> **Ivan**:
+> tweet_id should contains the ID of the tweet, but this script doesn't validate
+that is a valid tweet ID. Can you update it to add this validation?
+
+> **ChatGTP**:
+> Yes, you are correct that the current example code does not validate that the
+`id` attribute contains a valid tweet ID. This could lead to errors if an
+invalid ID is provided.
+>
+> To add this validation, you can use the Twitter API to check if a tweet with
+the specified ID exists. If the tweet does not exist, you can raise an error to
+let the user know that the ID is invalid.
+>
+> Here is an example of how you might update the `process` method to add this
+validation:
+> ```ruby
+> def process parent, target, attrs
+>   tweet_id = target
+> 
+>   # Validate that the ID is a valid tweet ID
+>   unless TwitterClient.tweet_exists?(tweet_id)
+>     raise  "Invalid tweet ID: #{tweet_id}"
+>   end
+> 
+>   # Fetch the tweet using the Twitter API
+>   tweet = TwitterClient.fetch_tweet(tweet_id)
+>   
+>   # Generate the HTML code for the tweet
+>   html = generate_tweet_html(tweet)
+>   
+>   # Create a new block containing the tweet HTML and add it to the document
+>   create_block  parent, :pass, html, attrs
+> end
+> ```
+> 
+> This code will check if a tweet with the specified ID exists using the
+`TwitterClient.tweet_exists?` method. If the tweet does not exist, it will raise
+an error with the invalid tweet ID. Otherwise, it will proceed to fetch the
+tweet and generate the HTML code to embed it in the document.
+
+Yo esperaba que validase que sea numérico pero, sorprendentemente, hace uso del
+API de Twitter para comprobar si existe. Aunque es una respuesta correcta, esto
+conlleva una llamada extra al API, que tiene un límite de peticiones. Lo ideal
+para mi es que la ejecución del script utilice únicamente una llamada y no
+varias. Se lo comento y le soy más específico con la validación que necesito.
+
+> **Ivan**:
+> That's a correct validation, but it requires to make an extra call to Twitter
+API, that is rate limited. A tweet ID is ever numeric. Can you update the script
+to validate that the tweet ID is numeric instead of checking if the tweet
+exists?
+
+> **ChatGPT**:
+> Yes, you are correct that making an extra call to the Twitter API to validate
+the tweet ID can be wasteful if the ID is not valid, as it counts against your
+API rate limit. Additionally, tweet IDs are always numeric, so you can use this
+information to validate the ID without making an extra API call.
+>
+> To do this, you can simply check if the `tweet_id` variable contains a numeric
+value, and raise an error if it does not. Here is an example of how you might
+update the `process` method to do this:
+> ```ruby
+> def process parent, target, attrs
+>   tweet_id = target
+>
+>   # Validate that the ID is numeric
+>   unless tweet_id.is_a?(Numeric)
+>     raise  "Invalid tweet ID: #{tweet_id}"
+>   end
+>
+>   # Fetch the tweet using the Twitter API
+>   tweet = TwitterClient.fetch_tweet(tweet_id)
+>  
+>   # Generate the HTML code for the tweet
+>   html = generate_tweet_html(tweet)
+>  
+>   # Create a new block containing the tweet HTML and add it to the document
+>   create_block  parent, :pass, html, attrs
+> end
+> ```
+> This code will check if the `tweet_id` variable contains a numeric value using
+the `Numeric` class, and raise an error if it does not. This will ensure that
+the tweet ID is valid without making an extra API call.
+
+Como no tengo experiencia progrmando con Ruby, desconozco que hace el método
+`is_a?`, por lo que le pregunto directamente.
+
+> **Ivan**:
+> What is_a? method returns?
+
+> **ChatGPT**:
+> The `is_a?` method in Ruby returns a boolean value indicating whether the
+object on which it is called is an instance of the specified class or one of its
+descendants.
+>
+> For example, if you have the following code:
+> ```ruby
+> x = "hello"
+>
+> if x.is_a?(String)
+>   puts "x is a string"
+> end
+>```
+> This will output `x is a string` to the console, because the `x` variable is
+an instance of the `String` class.
+>
+> On the other hand, if you have the following code:
+> ```ruby
+> x = 3
+>
+> if x.is_a?(String)
+>   puts "x is a string"
+> end
+> ```
+> This will not output anything to the console, because the `x` variable is not
+an instance of the `String` class (it is an instance of the `Fixnum` class,
+which is a descendant of the `Numeric` class).
+>
+> In general, the `is_a?` method is useful for checking the type of an object at
+runtime and taking different actions based on that type.
+
+Tal como ha dicho, equivaldría al operador `instanceof` de Java o `is` de C#.
+Debemos asumir que Asciidoctor enviará el ID como un string (así me encargaré yo
+mismo cuando cree los documentos Asciidoc), por lo que le informo de ello.
+
+> **Ivan**:
+> Ok. We should asume that tweet_id is ever an string. Can you check if the
+string is an integer value?
+
+> **ChatGPT**:
+> Yes, you are correct that the `tweet_id` variable in the `process` method is
+always a string, even if it contains a numeric value. To check if this string
+contains an integer value, you can use the `String#to_i` method, which converts
+the string to an integer if it contains a valid integer value, or returns `0` if
+it does not.
+>
+> Here is an example of how you might update the `process` method to use the
+`String#to_i` method to check if the `tweet_id` variable contains a valid
+integer value:
+> ```ruby
+> def process parent, target, attrs
+>   tweet_id = target
+>
+>   # Validate that the ID is an integer value
+>   unless tweet_id.to_i != 0
+>     raise  "Invalid tweet ID: #{tweet_id}" 
+>   end
+>
+>   # Fetch the tweet using the Twitter API
+>   tweet = TwitterClient.fetch_tweet(tweet_id)
+>  
+>   # Generate the HTML code for the tweet
+>   html = generate_tweet_html(tweet)
+>  
+>   # Create a new block containing the tweet HTML and add it to the document
+>   create_block parent, :pass, html, attrs
+> end
+> ```
+> In this code, the `tweet_id.to_i != 0` expression will check if the `tweet_id`
+string contains a valid integer value. If it does not, it will raise an error
+with the invalid tweet ID. Otherwise, it will proceed to fetch the tweet and
+generate the HTML code to embed it in the document.
+
+La IA ha entenido perfectamente lo que le he querido decir y corrige de nuevo el
+script, además me explica como funciona. ¡Perfecto!
+
+Nótese que en cada cambio que está haciendo, además está actualizando los
+comentarios para que estos no queden desactualizados. ¡Un 10!
+
+Una vez hecha la validación del tweet, vamos a continuar. Le voy a pedir que
+implemente el método `generate_tweet_html` que me había dejado únicamente con un
+TODO.
+
+> **Ivan**:
+> Please, implement generate_tweet_html method.
+
+> **ChatGPT**:
+> To implement the `generate_tweet_html` method, you will need to use the
+Twitter API to fetch the tweet by its ID and then generate the necessary HTML
+code to display the tweet on the page.
+>
+> Here is an example of how you might implement the `generate_tweet_html`
+method:
+> ```ruby
+> def generate_tweet_html(tweet)
+>   # Use the Twitter API to fetch the tweet by its ID
+>   tweet = TwitterClient.fetch_tweet(tweet_id)
+>
+>   # Generate the HTML code for the tweet
+>   html = <<~HTML
+>     <blockquote class="twitter-tweet">
+>       <p>#{tweet.text}</p>
+>       <a
+href="https://twitter.com/#{tweet.user.screen_name}/status/#{tweet.id}">
+>         #{tweet.created_at.strftime("%b %d %Y")}
+>       </a>
+>     </blockquote>
+>   HTML
+> end
+> ```
+> In this code, the `generate_tweet_html` method takes a `tweet` object as an
+argument. It then uses the Twitter API to fetch the tweet by its ID and
+generates the necessary HTML code to display the tweet on the page. The
+generated HTML uses the `<blockquote>` element to display the tweet text and the
+`<a>` element to link to the tweet on Twitter.
+>
+> Once you have implemented the `generate_tweet_html` method, you can use it in
+the `process` method to generate the HTML code for the tweet and add it to the
+document.
+>
+> Here is an example of how you might use the `generate_tweet_html` method in
+the `process` method:
+> ```ruby
+> def process parent, target, attrs
+>   tweet_id = target
+>
+>   # Validate that the ID is an integer value
+>   unless tweet_id.to_i != 0
+>     raise  "Invalid tweet ID: #{tweet_id}" 
+>   end
+>
+>   # Fetch the tweet using the Twitter API
+>   tweet = TwitterClient.fetch_tweet(tweet_id)
+>  
+>   # Generate the HTML code for the tweet
+>   html = generate_tweet_html(tweet)
+>  
+>   # Create a new block containing the tweet HTML and add it to the document
+>   create_block  parent, :pass, html, attrs
+> end
+> ```
+> This code will use the `generate_tweet_html` method to generate the HTML code
+for the tweet, and then create a new block containing the HTML and add it to the
+document. This will allow the tweet to be displayed on the page when the
+Asciidoc document is rendered.
+
+Aquí ocurren varias cosas. La primera de ella, es que dentro de este método,
+está usando el API de Twitter para obtener de nuevo los datos que ya conocía
+previamente, pues son los que les viene por parámetro. Yo mismo me encargo de
+borrar la primera línea.
+
+También se puede observar, la IA me ha devuelto de nuevo el contenido del método
+`process` sin ningún cambio. Esto es una constante  lo largo de toda la
+conversación, por lo que a partir de aquí, obmitiré esa parte de sus respuestas.
+
+Mi siguiente problema es que para hacer uso del API de Twitter para Ruby, este
+require instalarlo a través de una
+[gema](https://guides.rubygems.org/what-is-a-gem/). Cargar gemas desde Asciidoc,
+aunque es posible, es relativamente complicado, por lo que le pido a la IA que
+por favor lo reemplace haciendo directamente llamadas HTTP al API de Twitter.
+
+> **Ivan**:
+> I cannot load any gem, so I need to use only libraries available in Ruby core.
+Can you replace TwitterClient by a method that make an HTTP request to the
+Twitter API?
+
+> **ChatGTP**:
+> Yes, it is possible to make an HTTP request to the Twitter API using only the
+libraries available in the Ruby core. To do this, you can use the `Net::HTTP`
+class to make an HTTP request to the Twitter API and parse the response.
+>
+> Here is an example of how you might use the `Net::HTTP` class to fetch a tweet
+by its ID:
+> ```ruby
+> def fetch_tweet tweet_id
+>   # Build the URI for the Twitter API endpoint
+>   uri = URI("https://api.twitter.com/1.1/statuses/show.json?id=#{tweet_id}")
+> 
+>   # Set the authorization header for the request
+>   headers = {
+>     'Authorization' => 'Bearer <YOUR_BEARER_TOKEN>'
+>   }
+> 
+>   # Make the request and parse the JSON response
+>   response = Net::HTTP.get(uri, headers)
+>   tweet = JSON.parse(response)
+> 
+>   # Return the tweet object
+>   tweet
+> end
+> ```
+> In this code, the `fetch_tweet` method takes a `tweet_id` as an argument and
+uses the `Net::HTTP` class to make an HTTP GET request to the Twitter API
+endpoint for fetching a tweet by its ID. It sets the appropriate authorization
+header for the request and parses the JSON response into a Ruby object. It then
+returns the tweet object, which can be used to generate the HTML code for the
+tweet.
+>
+> Once you have implemented this method, you can use it in the
+`generate_tweet_html` method to fetch the tweet and generate the HTML code for
+it. Here is an example of how you might do this:
+>
+> ```ruby
+> def generate_tweet_html(tweet_id)
+>   # Use the Twitter API to fetch the tweet by its ID
+>   tweet = fetch_tweet(tweet_id)
+> 
+>   # Generate the HTML code for the tweet
+>   html = <<~HTML
+>     <blockquote class="twitter-tweet">
+>       <p>#{tweet.text}</p>
+>       <a
+href="https://twitter.com/#{tweet.user.screen_name}/status/#{tweet.id}">
+>         #{tweet.created_at.strftime("%b %d %Y")}
+>       </a>
+>     </blockquote>
+>   HTML
+> end
+> ```
+>
+> This code will use the `fetch_tweet` method to fetch the tweet by its ID and
+generate the HTML code for it using the `<blockquote>` and `<a>` elements, as in
+the previous example.
+Como se puede ver, no sólo me ha implementado método fetch_tweet, si no que
+además me ha modificado los métodos generate_tweet_html y process para que hagan
+uso de estos.
+>
+> Once you have implemented these methods, you can use them in the `process`
+method to fetch the tweet and generate the HTML code for it, and add it to the
+document. Here is an example of how you might do this:
+> ```ruby
+> def process parent, target, attrs
+>   tweet_id = target
+> 
+>   # Generate the HTML code for the tweet
+>   html = generate_tweet_html(tweet)
+>
+>   # Create a new block containing the tweet HTML and add it to the document
+>   create_block parent, :pass, html, attrs
+> end
+> ```
+
+Aquí no sólo me ha implementado un método para obtener el contenido del tweet,
+si no que además ha modificado el método `generate_tweet_html` para que lo
+llame, y ha eliminado esta llamada del método `process`. No soy capaz de
+entender a qué se debe ese cambio en la organización del código, pero no me
+preocupa y sigo con lo mío.
+
+Este método que ha implementado utiliza el [API 1.1 de
+Twitter](https://developer.twitter.com/en/docs/twitter-api/v1). Para acceder al
+API 1.1 necesitas hacer una petición formal a Twitter y pedir que te habiliten
+el acceso. Mi única opción es hacer uso del [API 2.0 de
+Twitter](https://developer.twitter.com/en/docs/twitter-api/getting-started/about-twitter-api),
+por lo que se lo comento. Dicho y hecho.
+
+> **Ivan**:
+> Can you use Twitter API 2.0 in fetch_tweet method?
+
+> **ChatGPT**:
+> Yes, it is possible to use the Twitter API 2.0 to fetch a tweet by its ID in
+the `fetch_tweet` method. To do this, you will need to update the URI and the
+authorization header for the request to use the new API endpoint and
+authentication scheme.
+>
+> Here is an example of how you might update the `fetch_tweet` method to use the
+Twitter API 2.0:
+> ```ruby
+> def fetch_tweet tweet_id
+>   # Construct the URL for the Twitter API request
+>   tweet_url = "https://api.twitter.com/2/tweets/#{tweet_id}"
+>   uri = URI.parse(tweet_url)
+> 
+>   # Create the HTTP request and set the necessary headers
+>   request = Net::HTTP::Get.new(uri)
+>   request['Authorization'] = 'Bearer <YOUR_BEARER_TOKEN>'
+>   request['Accept'] = 'application/json'
+> 
+>   # Make the HTTP request and retrieve the response
+>   response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+>     http.request(request)
+>   end
+> 
+>   # Parse the JSON response
+>   tweet = JSON.parse(response.body)
+>
+>   # Return the tweet object
+>   tweet
+> end
+> ```
+> In this code, the `fetch_tweet` method uses the new Twitter API 2.0 endpoint
+for fetching a tweet by its ID, and sets the appropriate authorization header
+for the request. It then makes the request and parses the JSON response into a
+Ruby object, just like in the previous example.
+
+Como se puede observar, en el header de autorización me pone un string que yo
+debería de reemplazar por mi bearer token. Le pido que lo obtenga directamente
+desde una variable de entorno. Otra vez más, dicho y hecho.
+
+> **Ivan**:
+> Can you replace 'Bearer <YOUR_BEARER_TOKEN>' string by an environment
+variable?
+
+> **ChatGPT**:
+> Yes, it is possible to use an environment variable to store the bearer token
+for the Twitter API instead of hardcoding it in the `fetch_tweet` method. To do
+this, you can use the `ENV` global variable in Ruby to access the value of the
+environment variable.
+>
+> Here is an example of how you might update the `fetch_tweet` method to use an
+environment variable for the bearer token:
+>
+> ```ruby
+> def fetch_tweet tweet_id
+>   # Construct the URL for the Twitter API request
+>   tweet_url = "https://api.twitter.com/2/tweets/#{tweet_id}"
+>   uri = URI.parse(tweet_url)
+> 
+>   # Create the HTTP request and set the necessary headers
+>   request = Net::HTTP::Get.new(uri)
+>   request['Authorization'] = "Bearer #{ENV['TWITTER_BEARER_TOKEN']}"
+>   request['Accept'] = 'application/json'
+> 
+>   # Make the HTTP request and retrieve the response
+>   response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+>     http.request(request)
+>   end
+> 
+>   # Parse the JSON response
+>   tweet = JSON.parse(response.body)
+>
+>   # Return the tweet object
+>   tweet
+> end
+> ```
+> In this code, the `fetch_tweet` method uses the `ENV` global variable to
+access the value of the `TWITTER_BEARER_TOKEN` environment variable and use it
+as the bearer token for the request. This allows you to store the bearer token
+in an environment variable and use it in the code without hardcoding it.
+
+Ahora le pido a la IA que modifique el método fetch_tweet para que lance un
+error si no existe.
+
+> **Ivan**:
+> Can you raise an error if tweet id doesn't exists?
+
+> **ChatGPT**:
+> Yes, it is possible to raise an error if the tweet ID does not exist by
+checking the response from the Twitter API. If the tweet does not exist, the API
+will return a response with a `404` status code and an error message in the
+body. You can check for this response in the `fetch_tweet` method and raise an
+error if it is received.
+>
+> Here is an example of how you might update the `fetch_tweet` method to raise
+an error if the tweet ID does not exist:
+> ```ruby
+> def fetch_tweet tweet_id
+>   # Construct the URL for the Twitter API request
+>   tweet_url = "https://api.twitter.com/2/tweets/#{tweet_id}"
+>   uri = URI.parse(tweet_url)
+> 
+>   # Create the HTTP request and set the necessary headers
+>   request = Net::HTTP::Get.new(uri)
+>   request['Authorization'] = "Bearer #{ENV['TWITTER_BEARER_TOKEN']}"
+>   request['Accept'] = 'application/json'
+> 
+>   # Make the HTTP request and retrieve the response
+>   response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+>     http.request(request)
+>   end
+>   
+>   # Check the status code of the response 
+>   if response.code == '404'
+>     raise  "Tweet not found: #{tweet_id}"
+>   end
+> 
+>   # Parse the JSON response
+>   tweet = JSON.parse(response.body)
+>
+>   # Return the tweet object
+>   tweet
+> end
+> ```
+> In this code, the `fetch_tweet` method checks the status code of the response
+from the Twitter API. If the status code is `404`, it means that the tweet does
+not exist, and the method raises an error with the message "Tweet not found:
+#{tweet_id}". If the tweet exists, the method parses the JSON response and
+returns the tweet object as before.
+
+Esto está bien para cuando el tweet no existe, sin embargo podría haber otros
+motivos por los que la respuesta no sea correcta, como usuario no autenticado, o
+API caída. Le pido a la IA que lo compruebe.
+
+> **Ivan**:
+> That's is correct, but it only checks that the tweet doesn't exists. There are
+any other reasons because the API can returns a response that is not 200, like
+unauthorised. Can you raise an error if response is not OK?
+
+> **ChatGPT**:
+> Yes, it is possible to raise an error if the response from the Twitter API is
+not `200` by checking the status code of the response. If the response has a
+different status code, it means that there was an error and you should raise an
+error with the appropriate message.
+>
+> Here is an example of how you might update the `fetch_tweet` method to raise
+an error if the response is not `200`:
+> ```ruby
+> def fetch_tweet tweet_id
+>   # Construct the URL for the Twitter API request
+>   tweet_url = "https://api.twitter.com/2/tweets/#{tweet_id}"
+>   uri = URI.parse(tweet_url)
+> 
+>   # Create the HTTP request and set the necessary headers
+>   request = Net::HTTP::Get.new(uri)
+>   request['Authorization'] = "Bearer #{ENV['TWITTER_BEARER_TOKEN']}"
+>   request['Accept'] = 'application/json'
+> 
+>   # Make the HTTP request and retrieve the response
+>   response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+>     http.request(request)
+>   end
+>   
+>   # Check the status code of the response 
+>   if response.code != '200'
+>     if response.code == '404'
+>       raise "Error: Tweet not found with ID #{tweet_id}"
+>     else
+>       raise "Error: #{response.code} #{response.message}"
+>     end
+>   end
+> 
+>   # Parse the JSON response
+>   tweet = JSON.parse(response.body)
+>
+>   # Return the tweet object
+>   tweet
+> end
+> ```
+
+Ahora comprueba que el la respuesta sea sí o sí 200, y no sólo que no sea 404.
+Además, manteniendo el contexto anterior, ha mantenido el caso de que pueda ser
+404. ¡Bravo!
+
+Llegados a este punto, parece que hay una extensión de Asciidoctor que podría
+funcionar. Hay algunos detalles más que pulir, como por ejemplo que la plantilla
+que genera el HTML espera un objeto como el que proporciona el método
+`TwitterClient.fetch_tweet` que hemos visto al principio, en vez de un `Hash`
+que devuelve el método `JSON.parse`. He intentado que lo arregle, pero cada
+cambio que añadía la rompía más, y eso me ha tocado arreglarlo a mí.
+
+También le ha faltado añadir los imports necesarios para que pueda encontrar las
+clases `JSON`, `Net::HTTP` entre otras. La comprobación de que el ID del tweet
+sea un entero tampoco funcionaba. Tras arreglar todos estos detallitos, algunos
+por mí mismo, otros con ayuda de la IA, tengo una extensión para Asciidoctor
+totalmente funcional.
+
+El código de la extensión está disponible [en un repositorio que he creado en
+GitHub](https://github.com/iokode/asciidoctor_extensions/blob/main/tweet_block_macro.rb).
+
+## Conclusiones
+Aunque he tenido que hacer algunos cambios a mano, la IA ha hecho la mayor parte
+del trabajo. Yo no sé nada de Ruby y hacer algo así me habría costado varias
+horas o incluso días, entre aprender la sintaxis de Ruby, buscar como se hacen
+llamadas HTTP, como se parsea un JSON, como se comprueba una expresión regular,
+etc.
+
+En cambio, ordenando a la IA y, con algunas modificaciones menores propias, he
+conseguido mi objetivo en una hora.
+
+El ahorro de tiempo y trabajo que esta tecnología supone hoy en día es algo que
+no tiene precedentes.

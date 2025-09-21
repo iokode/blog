@@ -1,0 +1,99 @@
+---
+title: "Compartir un fichero C# entre varios proyectos (sin referencias)"
+slug: compartir-fichero-codigo-varios-proyectos-sin-referencias
+author: montyclt
+publishDate: 2023-06-03
+license: CC BY 4.0
+discussionId: 49
+tags:
+ - spanish-legacy-post
+---
+
+Esta entrada va a ser corta y simplemente va a explorar una curiosidad poco
+común que me he visto obligado a utilizar.
+
+Trabajando en OpinionatedFramework, necesité de una serie de source-generators y
+decidí crearlos todos en el mismo proyecto (csproj), sin embargo, más adelante
+me vi en la necesidad de separar uno de ellos para poder lanzarlo junto con [el
+paquete de Ensure
+API](https://iokode.blog/post/2023/lanzado-opinionated-framework-ensure-api).
+
+Este único proyecto que contenía los source-generators, contenía también una
+clase helper utilizada por cada uno de source-generators. La estructura del
+proyecto era similar a esta:
+
+```
+IOKode.OpinionatedFramework.Generators (CSPROJ)
+ ├─ CodeGenerationHelpers.cs
+ ├─ Ensuring\
+ │   ├─ EnsuringGenerator.cs
+ │   └─ EnsuringGenerator.CodeGeneration.cs
+ └─ Facades\
+     ├─ FacadesGenerator.cs
+     └─ FacadesGenerator.CodeGeneration.cs
+```
+
+Para poder separarlo en distintos proyectos, lo primero que se me ocurrió hacer
+es un proyecto común que contenga esta clase helper y referenciarlo desde el
+resto de proyectos source-generators, obteniendo el siguiente resultado:
+
+```
+IOKode.OpinionatedFramework.Generators (CSPROJ)
+ └─ CodeGenerationHelpers.cs
+
+IOKode.OpinionatedFramework.Generators.Ensuring (CSPROJ)
+ ├─ [Project references]
+ │   └─ IOKode.OpinionatedFramework.Generators
+ ├─ EnsuringGenerator.cs
+ └─ EnsuringGenerator.CodeGeneration.cs
+
+IOKode.OpinionatedFramework.Generators.Facades (CSPROJ)
+ ├─ [Project references]
+ │   └─ IOKode.OpinionatedFramework.Generators
+ ├─ FacadesGenerator.cs
+ └─ FacadesGenerator.CodeGeneration.cs
+```
+
+Sin embargo, a la hora de intentar utilizar los generadores, [estos
+fallaban](https://github.com/dotnet/roslyn/discussions/47517). El motivo del
+fallo está fuera del ámbito de esta entrada, pero si tienes interés, puedes leer
+el hilo en el repositorio de Roslyn.
+
+Dandole un poco al coco, recordé que cuando generé el paquete NuGet de Ensure
+API, añadí al proyecto los archivos de licencia, icono y readme que, se
+encuentran fuera de la ubicación del mismo y, aparecieron en el IDE indicado
+como un acceso directo.
+
+![Proyecto incluyendo los ficheros LICENSE, README.md y package_icon.png que se encuentran fuera del directorio del mismo.](/posts/assets/compartir-fichero-codigo-varios-proyectos-sin-referencias/assets.png)
+
+Esto lo hice simplemente indicando la ruta en una etiqueta `None` de MSBuild en
+el fichero csproj:
+
+```xml
+<ItemGroup>
+    <None Include="..\..\docs\ensure\README.md" Pack="true" PackagePath="" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="" />
+    <None Include="..\..\package_icon.png" Pack="true" PackagePath="" />
+</ItemGroup>
+```
+
+Se me ocurrió que tal vez podría hacer lo mismo con un fichero de C# y… ¡voilà!
+
+Algo a tener en cuenta es la acción que realizará MSBuild sobre este fichero. En
+el caso anterior simplemente se incluía sin realizar ninguna acción (`None`),
+pero ahora necesitamos que ese fichero incluido se compile (`Compile`). Podemos
+referenciar al fichero en el csproj de la siguiente manera:
+
+```xml
+<ItemGroup>
+    <Compile Include="..\SourceGenerationHelper.cs" />
+</ItemGroup>
+```
+
+Tras añadirlo al csproj, apareció como un “acceso directo” en ambos proyectos:
+
+![Multiples proyectos incluyendo el mismo archivo de código C#, que se encuentra fuera de ellos.](/posts/assets/compartir-fichero-codigo-varios-proyectos-sin-referencias/sources.png)
+
+Además, como curiosidad, cada uno de estos proyectos compila este archivo por
+separado y añade dentro de su propio ensamblado, lo que permite cosas tan chulas
+como compartir una clase con visibilidad `internal` entre varios ensamblados.

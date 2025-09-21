@@ -1,0 +1,228 @@
+---
+title: "OpinionatedFramework: Comandos y middleware"
+slug: opinionated-framework-comandos
+author: montyclt
+publishDate: 2023-05-16
+license: CC BY 4.0
+discussionId: 46
+tags:
+ - spanish-legacy-post
+series: legacy-opinionated-framework
+---
+
+Continuamos los las novedades de OpinionatedFramework. En esta entrada voy a
+hablar sobre cómo se manejan los comandos. Los comandos son una parte central
+del framework, proporcionando una manera clara y coherente de encapsular los
+casos de uso de tu aplicación.
+
+## Registrando el ejecutor de comandos
+Para poder ejecutar comandos en OpinionatedFramework, primero necesitamos
+registrar un servicio que implemente el
+[contrato](https://iokode.blog/post/2023/opinionated-framework-contratos)
+[`ICommandExecutor`](https://github.com/iokode/OpinionatedFramework/blob/main/src/IOKode.OpinionatedFramework.Foundation/Contracts/ICommandExecutor.cs)
+en nuestro contenedor.
+
+OpinionatedFramework proporciona una implementación por defecto que se puede
+registrar de la siguiente manera:
+
+```csharp
+using IOKode.OpinionatedFramework.Commands;
+using IOKode.OpinionatedFramework.ContractImplementations.CommandExecutor;
+
+Container.Services.AddTransient<ICommandExecutor>(_ => new CommandExecutor(Array.Empty<ICommandMiddleware>()));
+```
+
+Cuando lleguememos a la parte de middleware veremos que este array vacío que se
+le proporciona al constructor de la clase
+[`CommandExecutor`](https://github.com/iokode/OpinionatedFramework/blob/main/src/IOKode.OpinionatedFramework.ContractImplementations.CommandExecutor/CommandExecutor.cs).
+
+Podría personalizarse el proceso de ejecución de un comando creando nuevas
+implementaciones de este contrato para casos avanzados.
+
+## Creando un comando
+Un comando es una clase que hereda de [`Command` o
+`Command<TResult>`](https://github.com/iokode/OpinionatedFramework/blob/main/src/IOKode.OpinionatedFramework.Foundation/Commands/Command.cs).
+
+Un comando encapsula una operación de nuestra aplicación. Por ejemplo, podríamos
+tener un comando para crear un nuevo usuario en nuestro sistema:
+
+```csharp
+public class CreateUserCommand : Command
+{
+    private readonly string _userName;
+    private readonly string _realName;
+
+    public CreateUserCommand(string realName, string userName)
+    {
+        _realName = realName;
+        _userName = userName;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+    {
+        var userStore = Locator.Resolve<IUserStore>();
+        await userStore.CreateUserAsync(_realName, _userName, cancellationToken);
+    }
+}
+```
+
+También podemos tener comandos que devuelven un resultado. Por ejemplo,
+podríamos tener un comando que devuelve el número total de usuarios en nuestro
+sistema:
+
+```csharp
+public class GetTotalUsersCommand : Command<int>
+{
+    protected override async Task<int> ExecuteAsync(CancellationToken cancellationToken)
+    {
+        var userStore = Locator.Resolve<IUserStore>();
+        return await userStore.GetTotalUsersAsync(cancellationToken);
+    }
+}
+```
+
+## Ejecutando comandos
+Para ejecutar un comando, primero tenemos que crear una instancia del comando.
+Esto lo haremos simplemente llamando al constructor:
+
+```csharp
+var createAliceUserCommand = new CreateUserCommand("Alice", "alice12");
+var getTotalUsersCommand = new GetTotalUsersCommand();
+```
+
+<Alert severity="info">
+NOTA: Habrás notado que al utilizar el constructor para pasar parámetros al
+comando, no se puede inyectar servicios por constructor. Esto no es un problema
+ya que en el comando [podemos utilizar la clase `Locator` para
+resolverlos](https://iokode.blog/post/2023/opinionated-framework-resolviendo-servicios).
+</Alert>
+
+Después, necesitamos resolver `ICommandExecutor` y llamar a su método
+`InvokeAsync`.
+
+```csharp
+var commandExecutor = Locator.Resolve<ICommandExecutor>();
+await commandExecutor.InvokeAsync(createAliceUserCommand);
+int totalUsers = await commandExecutor.InvokeAsync(getTotalUsersCommand);
+```
+
+Opcionalmente, el framework proporciona una fachada y un método de extensión
+sobre la clases `Command` y `Command<TResult>`, lo que permite hace la ejecución
+de comandos algo más sencillo.
+
+```csharp
+// Using the facade
+await Command.InvokeAsync(createAliceUserCommand);
+
+// Using the extension method
+int totalUsers = await getTotalUsersCommand.InvokeAsync();
+```
+
+El método `InvokeAsync`, tanto del contrato, como de la fachada o el método de
+extensión, aceptan opcionalmente un token de cancelación que luego recibirá el
+comando:
+
+```csharp
+await createAliceUserCommand.InvokeAsync(cancellationToken);
+```
+
+## Servicios scoped
+El ejecutador de comandos crea un scope cuando se invoca un comando. Esto
+significa que cuando se resuelva un servicio scoped usando el `Locator` dentro
+de un comando, siempre obtendremos la misma instancia.
+
+Aunque la clase Locator es estática, [está diseñada para ser thread
+safe](https://es.wikipedia.org/wiki/Seguridad_en_hilos). Cada comando mantiene
+su propio scope incluso aunque se estén ejecuando varios comandos al mismo
+tiempo.
+
+## Middlewares
+El ejecutador por defecto permite registrar middlewares que se ejecutan antes y
+después de cada comando. Un middleware es una clase que implementa la interfaz
+`ICommandMiddleware`:
+
+```csharp
+public interface ICommandMiddleware
+{
+    public Task ExecuteAsync(CommandContext context, InvokeNextMiddlewareDelegate next);
+}
+````
+
+Un middleware puede realizar acciones antes y después de la ejecución del
+comando, y también puede cortocircuitar el flujo de ejecución. Un ejemplo de
+middleware que loguea cada comando que se ejecuta utilizando la fachada
+[`Log`](https://github.com/iokode/OpinionatedFramework/blob/main/src/IOKode.OpinionatedFramework.Foundation/Facades/Log.cs):
+
+```csharp
+public class LoggingMiddleware : ICommandMiddleware
+{
+    public async Task ExecuteAsync(CommandContext context, InvokeNextMiddlewareDelegate next)
+    {
+        Log.Info($"Executing command: {context.CommandType.Name}");
+
+        await next(context); // Ejecuta el siguiente middleware y, finalmente el comando.
+
+        Log.Info($"Executed command: {context.CommandType.Name}");
+    }
+}
+```
+
+Hay muchas posibles utilidades para los middleware, algunas podrían ser:
+- Loguear la ejecución de un comando.
+- Gestionar las excepciones que puede lanzar un comando, envolviendo `next()` en
+  un bloque try..catch.
+- Comprobar que el usuario tiene permisos suficientes para ejecutar el comando
+  y, en caso contrario, cortocircuitar el flujo.
+
+<Alert severity="info">
+NOTA: Los middleware también mantienen el mismo scope que el comando que va a
+ejecutar. Esto permite cosas como que tras realizar una acción sobre un store
+registrado como scoped en un comando, un middleware se encargue de persistir los
+cambios en el mismo store.
+</Alert>
+
+<Alert severity="info">
+NOTA 2: Al llamar a `next()` en el último middleware, se ejecuta el comando. Se
+podría decir que `next` es el método `ExecuteAsync()` del siguiente middleware
+y, en caso de ser el último, del comando. No llamar a `next()` en un comando
+hará que ni los siguientes middleware ni el comando se ejecuten. Esto se conoce
+como cortocircuitar el flujo de middleware.
+</Alert>
+
+Para registrar un middleware, simplemente necesitamos agregarlo al
+CommandExecutor cuando lo registramos:
+
+```csharp
+Container.Services.AddTransient<ICommandExecutor>(_ =>
+    new CommandExecutor(new ICommandMiddleware[] { new ExceptionHandlingMiddleware() })););
+```
+
+Este es el motivo por el cual hay un array en el constructor del command
+executor, para registrar los middleware que se ejecutarán.
+
+## Conclusión
+Los comandos en OpinionatedFramework proporcionan una forma sólida y coherente
+de encapsular nuestra lógica de negocio, manteniendo nuestras clases y métodos
+limpios y enfocados. Mediante el uso de middlewares, podemos agregar
+funcionalidades comunes a todos nuestros comandos, como logging o manejo de
+errores, de manera fácil y consistente.
+
+El manejo del scope en los comandos también es una característica poderosa, ya
+que nos permite garantizar que los servicios scoped se comporten de manera
+predecible durante la ejecución de un comando.
+
+Me gustaría facilitar en registro del ejecutador de comandos añadiendo un método
+de extensión que permita registrarlo de la siguiente manera:
+
+```csharp
+Container.Services.AddCommandExecutor(options =>
+{
+    options.AddMiddleware<CheckPermissionsMiddleware>();
+    options.AddMiddleware<LoggingMiddleware>();
+});
+```
+
+Recuerda que [OpinionatedFramework es un proyecto open source y puedes
+colaborar](https://github.com/iokode/OpinionatedFramework) en su desarrollo.
+
+¡Nos vemos!

@@ -1,0 +1,97 @@
+---
+title: "¿Este framework tiene opinión?"
+slug: este-framework-tiene-opinion
+author: montyclt
+publishDate: 2023-02-11
+license: CC BY 4.0
+discussionId: 34
+tags:
+ - spanish-legacy-post
+series: legacy-opinionated-framework
+---
+
+Hace unos días [pregunté en
+Twitter](https://twitter.com/montyclt/status/1610012234087817217) si el
+framework [Laravel](https://laravel.com/) era un framework opinionado. Quería
+saber primero, que se entiende por un framework opinionado y segundo, si esto es
+bueno o no.
+
+Aunque la pregunta la hice usando Laravel de ejemplo, ya que tiene fama de ser
+un framework opinionado a raíz de los servicios que ofrece y los patrones que
+promueve, todo el contenido de esta entrada se podría aplicar a cualquier otro
+framework.
+
+El hilo dio debate y sacaron a la luz algunos argumentos interesantes sobre lo
+que es un framework opinionado.
+
+## ¿Qué es un framework opinionado?
+
+Entre todas estas respuestas, me gustaría destacar especialmente [la de David
+Fowler](https://twitter.com/davidfowl/status/1610066514018992128), en el que
+explica que algunos frameworks pueden estar más opinionados que otros, y que las
+"opiniones" pueden venir en diferentes formas, entre ellas documentación o
+implementaciones por defecto. Otra posible forma de dar "opinión" es a través
+del famoso paradigma [convención sobre
+configuración](https://en.wikipedia.org/wiki/Convention_over_configuration).
+
+Se podría decir que un framework es opinionado cuando este te guía en la forma
+de hacer cosas. Veamos algunos ejemplos.
+
+## Validaciones
+
+Algunos frameworks proponen ciertas formas de validar datos de entrada, en
+Laravel por ejemplo, tenemos las llamadas [validation
+request](https://laravel.com/docs/9.x/validation#form-request-validation),
+mientras que en ASP.NET Core tenemos el famoso [ModelState y los validation
+attributes](https://learn.microsoft.com/en-us/aspnet/core/mvc/models/validation).
+
+## Contratos en Laravel
+
+Laravel ofrece una serie de servicios en el core como
+[emails](https://laravel.com/docs/9.x/mail),
+[broadcasting](https://laravel.com/docs/9.x/broadcasting),
+[caché](https://laravel.com/docs/9.x/cache),
+[notificaciones](https://laravel.com/docs/9.x/notifications),
+[eventos](https://laravel.com/docs/9.x/events), etc.
+
+En el core de Laravel hay una serie de interfaces que definen estos servicios
+llamados [contratos](https://laravel.com/docs/9.x/contracts), así como una
+implementación por defecto para cada uno de los contratos.
+
+Laravel también ofrece una serie de distintos mecanismos para resolver estos
+servicios, como puede ser [inyección de
+dependencias](https://laravel.com/docs/9.x/container), fachadas o [la función
+helper `app(string
+$serviceName)`](https://laravel.com/docs/9.x/helpers#method-app).
+
+Se podría decir entonces que tanto los contratos como las distintas formas de
+resolver estos servicios, es una forma de "opinión" de Laravel. No es la única,
+hay muchas otras como la predominancia del [sistema de plantillas
+Blade](https://laravel.com/docs/9.x/blade) o la "integración" que provee por
+defecto de [Vue.js](https://vuejs.org/).
+
+### Fachadas
+
+Entre las distintas formas de resolver servicios que provee Laravel se
+encuentran las fachadas, una serie de clases estáticas que permiten acceder a
+los servicios de estos contratos desde cualquier parte. Esto es útil sobretodo
+en [aquellas clases donde no es fácil hacer inyección de
+dependencias](https://blog.koalite.com/2019/02/clases-estaticas-como-alternativa-a-inyeccion-de-dependencias/)
+o en aquellos proyectos que [se ha optado por no utilizar inyección de
+dependencias](https://blog.koalite.com/2016/02/las-ventajas-de-no-usar-inyeccion-de-dependencias/).
+
+## La ausencia de contratos en ASP.NET Core
+
+A diferencia de Laravel, ASP.NET Core no proporciona muchos de estos servicios.
+Se entiende que el envío de una notificación o el acceso a una base de datos es
+cosa de tu aplicación y será implementado por esta dependiendo de la aplicación.
+
+Este enfoque no es malo, ya que si tu aplicación no accede a una base de datos,
+pues es una dependencia menos que tienes que manejar. Se podría decir que el
+framework es "más pequeño". Si tu aplicación necesita acceder a una base de
+datos, hay varias soluciones disponibles en NuGet, incluyendo Entity Framework,
+la solución de Microsoft considerada "oficial" en ASP.NET Core.
+
+Este enfoque permite además poder utilizar estas soluciones sin necesidad de
+depender de todo el framework en un proyecto que no lo requiere. Es simplemente
+desacoplamiento puro.

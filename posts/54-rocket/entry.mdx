@@ -1,0 +1,79 @@
+---
+title: "Butterfly in a Rocket"
+slug: rocket
+author: montyclt
+publishDate: 2025-09-21
+license: CC BY 4.0
+discussionId: 54
+tags:
+ - iokode
+ - astro
+ - butterfly
+---
+
+Butterfly was the original blogging engine that ran this blog since it was created in 2022. Due to multiple
+reasons, in [July 2024](https://x.com/Montyclt/status/1817346712408613041), I decided to rewrite it from scratch using Astro, and I named it
+"Butterfly in a Rocket". While Butterfly is a reference to the original blogging engine, *Rocket* is a
+reference to the spatial lore about Astro.
+
+This post summarizes the changes from legacy Butterfly and the reason behind each change.
+
+## Why Astro?
+
+Astro is a content-focused web framework that builds static websites. That’s perfect for performance because
+posts don’t need to be generated at each query from the GitHub API. They’re generated in a GitHub Action.
+
+Additionally, I feel very comfortable with Astro features in general, and I used it in other websites at work.
+
+## Performance improvements
+
+Legacy Butterfly queries GitHub’s GraphQL API in each request, that means the engine needs to wait for the GitHub's
+response before responding to the client. That means waiting about 0.5 to 1 seconds to receive the response.
+
+The New Engine generates static HTML pages for all content at once. Then, it just returns the HTML content without
+needing to query it. It just does an AJAX query for comments only when the user scrolls to the comments, not before
+(implemented as Astro Island).
+
+## Author agnostic
+
+While the Legacy Butterfly doesn't show the post's author because it assumes I author all posts, the New Engine
+allows specifying the author of each post, allowing other people to collaborate writing posts with their name.
+
+This change is necessary to allow collaboration as it is specified by the [IOKode's constitution](https://iokode.blog/constitution), but it
+has another positive side effect. Google updated their SEO policies to
+[score posts based on the author experience](https://www.semrush.com/blog/eeat/), so specifying the author will be
+a SEO improvement too.
+
+## Series
+
+Writing the [OpinionatedFramework](https://iokode.blog/posts/legacy/este-framework-tiene-opinion) posts, I noticed that I need a way to link posts of the same series,
+so I added the series feature to the New Engine.
+
+## SEO
+
+I'm not a SEO expert. I have no real interest in SEO techniques, but while I want this blog to be a success,
+so I did a SEO course while developing the New Engine and I implemented a lot of technical SEO improvements.
+These improvements include multiple changes like creating a sitemap file, correct usage of meta-tags, registering
+the blog in Google Search Engine, etc.
+
+I will not change my form of writing finding the best keywords or any other content manipulation technique
+because I want my content to be as authentic, so I skip these parts of the course.
+
+## Easier sysadmin
+
+The Legacy Engine is deployed in my own VPS. I need to update the server or renew the SSL certificate manually.
+While the New Engine is deployed as static HTML, it can be easily deployed in any shared hosting without backend
+language support.
+
+## Statistics
+
+The Legacy Engine is deployed without any kind of statistics system integrated. The New Engine doesn't have any
+too, but while it can be deployed in a shared hosting, it's deployed in [CloudFlare Pages](https://pages.cloudflare.com/) which has a
+built-in statistics system.
+
+## Visual and accessibility improvements
+
+I updated the typography by choosing new fonts and increasing the font size for better readability. A favicon
+was added, and the CSS structure was reorganized to improve maintainability. Each published post now generates
+an OpenGraph image for social media cards, and print rendering has been enhanced with dedicated `@media print`
+rules.

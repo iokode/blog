@@ -1,0 +1,107 @@
+---
+title: "Las aplicaciones web son una chapuza (no todas)"
+slug: las-aplicaciones-web-son-una-chapuza
+author: montyclt
+publishDate: 2023-03-26
+license: CC BY 4.0
+discussionId: 42
+tags:
+ - spanish-legacy-post
+---
+
+Cualquiera diría que con este título vivo cargado de odio, pero nada más lejos
+de la realidad. Hace un tiempo [dije en un
+comentario](https://github.com/iokode/blog/discussions/11#discussioncomment-2624310)
+que, en mi opinión, las aplicaciones web es una chapuza que se nos ha ido de las
+manos y hoy vengo a hablar sobre ello.
+
+Escribo esta entrada porque me gusta mucho mi trabajo, me gusta el software y me
+gustaría que ciertas cosas hubiesen evolucionado de forma distinta a la que lo
+han hecho.
+
+Soy consciente de que con esta entrada no voy a cambiar el rumbo del desarrollo
+web; sin embargo, al menos expresaré mi opinión.
+
+## Documentos
+
+La web nunca fue diseñada para ser una plataforma de aplicaciones. Desde un
+inicio, la web se diseñó como un sistema para transferir y leer documentos de
+texto.
+
+HTML es en esencia un formato de marcado diseñado para documentos. Prácticamente
+todas las etiquetas están orientadas a ello, párrafos, encabezados, imágenes,
+enlaces a otros documentos…
+
+La web desde siempre ha permitido algo de interactividad mínima a través de los
+formularios pensados para cosas como registrarte en una lista de correos o
+realizar una compra online.
+
+## Las aplicaciones basadas en formularios
+
+Gracias a los formularios, empezaron a aparecer las primeras aplicaciones
+basadas en estos, cosas como foros o tablones de anuncios.
+
+No tengo ninguna queja contra esto porque es para lo que los formularios se
+inventaron. Estos siguen siendo documentos que permiten la entrada de datos para
+hacer modificaciones sobre el documento, pero siguen siendo documentos al fin y
+al cabo.
+
+## Aplicaciones incrustadas en documentos
+
+Hubo una época en la que las grandes aplicaciones web se renderizaban dentro de
+una especie de “canvas” que se incrustaba. Estas aplicaciones podían estar
+desarrolladas en infinidad de lenguajes, siendo Java, .NET (Silverlight) y
+ActionScript (Flash) los tres más usados. Cada uno de ellos requería un plugin
+de navegador para ser ejecutadas.
+
+Este modelo acabó despareciendo debido principalmente a que Apple decidió que no
+soportaría ninguno de estos plugins en iOS.
+
+Además, este modelo presentaba un problema grave de seguridad, ya que las
+aplicaciones eran ejecutables que se ejecutaban directamente en el sistema
+operativo y el navegador simplemente renderizaba el resultado, haciendo que
+pudiesen tener acceso a cosas como el sistema de ficheros.
+
+La versión moderna de este modelo es la etiqueta `canvas` , que representa el
+espacio donde se renderizará la aplicación. Además, permite cosas inherentes a
+la web moderna como accesibilidad y responsividad. Aquello que el canvas
+renderizará puede ser controlado a través de JavaScript o WebAssembly.
+
+Este modelo no me molesta, la web sigue siendo un documento y simplemente
+incrusta una aplicación como podría incrustar una imágen o una tabla. Si se
+quiere que todo sea una aplicación, el documento puede contener únicamente un
+canvas y ningún otro elemento. Hay [algunos frameworks](https://flutter.dev)
+modernos que hacen esto.
+
+## HTML5: la chapuza
+
+JavaScript –y ahora, también WebAssembly– permite manipular al vuelo todo el
+documento. Ahora, prográmaticamente se pueden añadir nuevos párrafos, puedes
+hacer que un botón cambie el contenido entre otras muchas cosas.
+
+Esto por sí mismo no es malo, y permite hacer cosas como validar un formulario
+antes de enviarlo, descargando al servidor de tener que hacer ese trabajo o
+cargar más información del documento al hacer scroll. Mientras se use para
+manipular un documento de texto como tal, no veo gran problema.
+
+El problema llega cuando se empieza a utilizar para desarrollar completas
+aplicaciones que no son documentos. De repente en la web aparecen todo tipo de
+aplicaciones como gestores de tareas, procesadores de texto, editores de vídeo,
+etc. formadas por componentes diseñados para documentos.
+
+Así pues se empiezan a ver cosas como un editor de fotografías que utiliza
+encabezados (`h1`) para el título de la imagen que se está modificando,
+divisiones (`div`) para cada una de las capas, etc.
+
+Como agravante de esto, han aparecido cientos de frameworks –como
+[Angular](https://angular.io) o
+[Blazor](https://dotnet.microsoft.com/en-us/apps/aspnet/web-apps/blazor)–
+diseñados para desarrollar aplicaciones web completas basadas en este modelo de
+manipular el DOM.
+
+Básicamente se está utilizando una tecnología que se diseñó para escribir
+documentos para desarrollar aplicaciones. Esto es tan absurdo como desarrollar
+aplicaciones completas utilizando Microsoft Word y macros. Se puede, sí, pero es
+una chapuza.
+
+Una chapuza que por desgracia, está demasiado extendida…

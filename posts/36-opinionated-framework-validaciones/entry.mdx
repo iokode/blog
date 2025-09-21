@@ -1,0 +1,132 @@
+---
+title: "OpinionatedFramework: Validaciones"
+slug: opinionated-framework-validaciones
+author: montyclt
+publishDate: 2023-02-11
+license: CC BY 4.0
+discussionId: 36
+tags:
+ - spanish-legacy-post
+series: legacy-opinionated-framework
+---
+
+La [validación de precondiciones e
+invaraintes](https://blog.koalite.com/2014/01/diseno-por-contrato/) es un
+requisito básico en el diseño de cualquier clase o estructura.
+
+Existen varios paquetes en NuGet para realizar esta validación de forma
+sencilla, pero prácticamente todos pecan del mismo problema: **no permiten
+personalizar el tipo de excepción que se lanzará cuando la validación no se
+cumple**.
+
+OpinionatedFramework incluye una librería de validación que refleja lo que para
+mi es el API perfecta para validaciones.
+
+## Uso
+
+El uso de esta librería es simple:
+
+```csharp
+Ensure.Exception(new Exception()).Category.Validation(args);
+```
+
+La librería lanzará la excepción proporcionada si no se cumple la validación.
+Para hacer su uso más cómodo, se incluyen algunos métodos que seleccionan
+ciertas excepciones:
+
+```csharp
+Ensure.Argument(nameof(param)).String.NotEmpty(value); // ArgumentException
+Ensure.Argument(nameof(param)).NotNull(value); // ArgumentNullException
+Ensure.Base("Exception message.").String.NotEmpty(value); // Exception
+Ensure.Exception(new EmailException("Invalid email address.")).String.EmailAddress(value); // EmailException
+Ensure.InvalidOperation("Cannot add an empty string to the error bag.").String.NotEmpty(value); // InvalidOperationException
+```
+
+Estos métodos son:
+
+- `Argument`: Lanza una `ArgumentException` o una `ArgumentNullException`
+- `Base`: Lanza una `Exception` con el mensaje especificado.
+- `Exception`: Lanza la instancia de la excepción proporcionada.
+- `InvalidOperation`: Lanza una `InvalidOperationException` con el mensaje
+  especificado.
+
+## Categorías de validaciones (ensurers)
+
+En cuanto a las validaciones, esta librería incluye validaciones de las
+siguientes categorías:
+
+- `Assertion`: Valida booleanos a true o false.
+- `Enumerable`: Contiene validaciones sobre IEnumerable, por ejemplo, si está
+  vacío, al menos tantos elementos, si contiene un elemento concreto…
+- `Number`: Contiene validaciones sobre valores númericos, por ejemplo si es
+  valor está entre dos números, si es decimal...
+- `Object`: Contiene validaciones sobre objetos, por ejemplo, si es nulo.
+- `Stream`: Contiene validaciones sobre streams, por ejemplo, si se puede leer,
+  se puede escribir…
+- `String`: Contiene validaciones sobre cadenas de carácteres, por ejemplo si
+  está vacía, si es de tal tamaño, si contiene tal subcadena, si es un email
+  válido, si cumple una expresión regular...
+- `Type`: Contiene validaciones sobre tipos, por ejemplo, si es un tipo valor o
+  referencia, si es asignable a otro tipo…
+
+## Puntos de extensión
+
+A cada una de estas categorías se les llama *Ensurers.* Escribir un ensurer
+nuevo es tan sencillo como crear una clase estática con las validaciones y
+añadirle el atributo `[Ensurer]`:
+
+```csharp
+[Ensurer]
+public static class CustomerEnsurer
+{
+    public static bool IsIndividual(Customer customer)
+    {
+        return customer is IndividualCustomer;
+    }
+
+    public static bool IsBusiness(Customer customer)
+    {
+        return customer is BusinessCustomer;
+    }
+}
+```
+
+Tras escribir esta simple clase, un [source
+generator](https://learn.microsoft.com/en-us/dotnet/csharp/roslyn-sdk/source-generators-overview)
+se encarga de hacer toda la magia necesaria y a partir de este momento ya pueden
+ser usados (muchas gracias a @Angeling3 por escribir los source generators):
+
+```csharp
+Ensure.Exception(new CustomerException()).Customer.IsIndividual(customer);
+```
+
+Actualmente no lo permite, pero me gustaría permitir poder añadir nuevos métodos
+que seleccionan la excepción, de forma que la validación de arriba pueda ser
+escrita se la siguiente forma:
+
+```csharp
+Ensure.Customer().Customer.IsIndividual(customer);
+```
+
+## Desactivación por motivo de rendimiento
+
+Otro aspecto que aún no está disponible pero que pretendo añadir es la opción de
+poder desactivar las validaciones sobre ciertas condiciones. Esto permitiría
+poder ignorarlas evitando así un impacto en el rendimiento cuando, por ejemplo,
+la aplicación se compila en modo release.
+
+## Aislado del resto del framework
+
+Esta librería será lanzada en un paquete NuGet aislado del resto de
+OpinionatedFramework, de forma que pueda ser utilizada sin necesidad de tener
+una dependencia sobre el framework completo. Sin embargo, el resto de
+OpinionatedFramework depende de ella, ya que es usada para validar las
+invariantes de las propias clases que proporciona el framework.
+
+## ¿Quieres colaborar?
+OpinionatedFramework es un proyecto open source [alojado en
+GitHub](https://github.com/iokode/OpinionatedFramework). Si quieres colaborar en
+el desarrollo, puedes enviar una pull request.
+
+[Ensuring](https://github.com/iokode/OpinionatedFramework/tree/main/src/IOKode.OpinionatedFramework.Ensuring)
+es el proyecto dentro de OpinionatedFramework encargado de las validaciones.

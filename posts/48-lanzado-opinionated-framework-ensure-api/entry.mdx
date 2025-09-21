@@ -1,0 +1,133 @@
+---
+title: "Lanzada la versión 1.0.0 del API Ensure de OpinionatedFramework"
+slug: lanzado-opinionated-framework-ensure-api
+author: montyclt
+publishDate: 2023-05-28
+license: CC BY 4.0
+discussionId: 48
+tags:
+ - spanish-legacy-post
+series: legacy-opinionated-framework
+---
+
+Nunca he sido fan de la Formula 1, pero para celebrar el podio de Alonso en el
+GP de Mónaco, [Nala, mi gata favorita hace la
+croqueta](https://twitter.com/danielbarri_/status/1662863095264313345) y yo os
+traigo un regalo a la comunidad: el lanzamiento de la primera versión del API de
+Ensure de
+[OpinionatedFramework](https://github.com/iokode/OpinionatedFramework).
+
+OpinionatedFramework aún tiene un camino por recorrer antes de lanzar su primera
+versión completa, sin embargo como Ensure está desacoplado al mismo, he podido
+lanzar este API de validaciones antes de que el resto del framework esté listo.
+
+## Cambios
+Ya introduje este API en [una de las primeras entradas de diario de
+OpinionatedFramework](https://iokode.blog/post/2023/opinionated-framework-validaciones),
+desde entonces ha sido pulido. Veamos algunos cambios desde entonces:
+
+### API más natural
+Como expuse en aquella entrada, en el API se exponía primero el tipo de
+excepción a lanzar y después la validación, de forma tal que así:
+
+```csharp
+Ensure.InvalidOperation("The person is not in legal age.").Boolean.IsTrue(person.Age >= 18);
+```
+
+Este API podría resultar confuso, así que se le ha dado la vuelta haciendolo más
+natural:
+
+```csharp
+Ensure.Boolean.IsTrue(person.Age >= 18).ElseThrowsInvalidOperation("The person is not in legal age.");
+```
+
+Quiero agradecer enormemente a @Angeling3 que hizo [una magnifica
+pull-request](https://github.com/iokode/OpinionatedFramework/pull/10) para
+conseguir esto.
+
+### Amplia gama de validaciones
+Para lanzar el paquete, me he asegurado de incluir una gama de validaciones que
+incluye la mayoría de los casos comunes. Los ensurers (categorías de validación)
+incluidos son:
+- `Boolean`: Permite validar si un booleano es verdadero o falso.
+- `Enumerable`: Contiene una serie de validaciones sobre enumerables, por
+  ejemplo comprobar si tiene cierto número de elementos o si está vacío.
+- `Number`: Contiene una serie de validaciones sobre números, por ejemplo
+  comprobar si es mayor o menor que otro número. Contiene sobrecargas para los
+  tipos `byte`, `short`, `int`, `long`, `float`, `double`, `decimal`, `ushort`,
+  `uint` y `ulong`.
+- `Object`: Contiene una serie de validaciones aplicables a cualquier objeto,
+  por ejemplo comprobar si es nulo.
+- `Stream`: Permite comprobar si un stream puede ser leído, escrito o
+  "seekeado".
+- `String`: Incluye la mayor parte de validaciones. Desde comprobar si un string
+  contiene sólo números o si es una dirección IP válida hasta validar cualquier
+  expresión regular. Es el ensurer más completo.
+- `Type`: Contiene comprobaciones sobre el árbol de un tipo, permitiendo
+  comprobar desde si otro tipo es su padre o si implementa una interfaz.
+
+### Extensibilidad
+En aquella entrada expuse ambos puntos por los que me gustaría que se pudiese
+extender el API: creación de nuevos ensurers y selección de excepciones.
+Actualmente ambos puntos de extensión están implementados y se puede extender a
+partir de ellos.
+
+En la documentación se detalla como extender el API.
+
+### ArgumentNotNull
+Un caso especial es el método `ArgumentNotNull(object value)`, que parte sobre
+la clase `Ensure` y lanza `ArgumentNullException` en caso de que el valor dado
+sea nulo.
+
+```csharp
+Ensure.ArgumentNotNull(model);
+```
+
+Este método es un shortcut para comprobar la nulidad de argumentos y lanzar la
+correspondiente excepción. Al ser una de las validaciones más comunes, es más
+rápido y cómodo que escribir:
+
+```csharp
+Ensure.Object.NotNull(model).ElseThrowsNullArgument(nameof(model));
+```
+
+Pero además, este shortcut se encarga de capturar el nombre del objeto a
+comprobar y añadirlo a la propiedad `ParamName` de la excepción.
+
+### Tests
+Tanto el propio API como todos los ensurers incluyen tests unitarios.
+
+## Instalación y documentación
+La instalación es tan sencilla como incluir el [paquete NuGet en tu
+proyecto](https://www.nuget.org/packages/IOKode.OpinionatedFramework.Ensuring).
+
+La documentación está disponible en el [repositorio GitHub de
+OpinionatedFramework](https://github.com/iokode/OpinionatedFramework/tree/main/docs/ensure).
+
+## Contribución
+Como siempre digo en todas las entradas que hablo de este framework, es un
+proyecto OpenSource. Cualquier contribución es bienvenida.
+
+## Roadmap
+Una de las características que tengo en mente implementar en el futuro es
+permitir la concatenación de validaciones utilizando las conjunciones AND y OR.
+
+Un ejemplo de como quedaría:
+
+```csharp
+Ensure
+    .Boolean.IsFalse(order.IsClosed)
+    .Or.Boolean.IsFalse(order.IsCompleted)
+    .ElseThrowsInvalidOperation("Cannot update this order due it's closed or it's completed.");
+```
+
+Se puede leer de forma natural que asegure que la orden no esté ni cerrada ni
+completada para hacer un cambio sobre ella.
+
+## Cierre y conclusiones
+Personalmente, me siento bastante contento de haber podido dar este pequeño
+pasito en el desarrollo del framework. Si alguien decide utilizarlo en su
+proyecto, por favor, házmelo saber de alguna forma (GitHub discussion, Twitter,
+correo electrónico, comentario a esta entrada...).
+
+¡Me encantaría saber que mi trabajo os está resultando útil!

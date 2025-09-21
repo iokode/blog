@@ -1,0 +1,104 @@
+---
+title: "Alergia a las vocales"
+slug: alergia-vocales
+author: montyclt
+publishDate: 2022-08-31
+license: CC BY 4.0
+discussionId: 26
+tags:
+ - spanish-legacy-post
+---
+
+Recientemente, en el proyecto en el que estoy trabajando en mi empresa, nuestro
+[product
+owner](https://www.techtarget.com/searchsoftwarequality/definition/product-owner)
+nos indicó la necesidad de añadir una nueva característica a la aplicación: la
+integración con el sistema de pagos
+[SEPA](https://www.sepaesp.es/sepa/es/secciones/sobre-sepa/Sobre_SEPA.html).
+
+La integración con SEPA es relativamente sencilla, se trata de generar una serie
+de documentos XML que representan un [adeudo
+directo](https://www.sepaesp.es/sepa/es/secciones/instrumentos/adeudosdirectos/Adeudos_directos_basicos.html).
+El esquema de estos documentos XML está definido por el estándar [ISO
+20022](https://www.iso20022.org/), una norma ISO que define como las empresas
+han de comunicarse con los bancos.
+
+La tarea no era especialmente difícil, se trata simplemente de añadir un nuevo
+caso de uso en la aplicación para que exporte los adeudos (que en nuestra
+aplicación es una entidad de dominio) en un fichero XML con el esquema definido
+por la norma.
+
+El problema aquí viene a la hora de ver como es el documento XML. He aquí una
+versión reducida del mismo:
+
+```xml
+<Document>
+    <CstmrDrctDbtInitn> <!-- Customer direct debit ¿initn?  -->
+        <GrpHdr> <!-- Group header -->
+            <MsgId>4</MsgId> <!-- Message ID -->
+            <CreDtTm>2022-08-31T14:27:02</CreDtTm> <!-- Creation date time -->
+            <NbOfTxs>2</NbOfTxs> <!-- Number of transactions -->
+            <CtrlSum>25.41</CtrlSum> <!-- Total amount -->
+        </GrpHdr>
+
+        <PmtInf> <!-- Payment information -->
+            <DrctDbtTx>...</DrctDbtTx>  <!-- Direct debit transaction -->
+            <DrctDbtTx>...</DrctDbtTx>  <!-- Direct debit transaction -->
+        <PmtInf>
+    </CstmrDrctDbtInitn>
+</Document>
+```
+
+**Nota**: Este documento no es real y no está completo. El estándar define
+bastantes más etiquetas, pero os hacéis una idea.
+
+Este documento se divide en dos partes, una cabecera (`GrpHdr`) con información
+común y un cuerpo (`PmtInf`) con información del pago de cada una de las
+transacciones.
+
+Quienes han diseñado este estándar, por algún motivo tienen alguna extrada
+aversión a utilizar palabras completas para las etiquetas –y por algún motivo
+que no logro comprender, suelen eliminar más vocales que consonantes–,
+dificultando muchísimo la compresión de este documento por humanos. El esquema
+podría haber sido algo así, de forma que sea mucho más comprensible por humanos
+y todo habría funcionado igual:
+
+```xml
+<DirectDebit>
+    <Header>
+        <MessageId>4</MessageId>
+        <CreationDate>2022-08-31T14:27:02</CreationDate>
+        <Transactions>2</Transactions>
+        <Amount>25.41</Amount>
+    </Header>
+
+    <PaymentInformation>
+        <Transaction>...</Transaction>
+        <Transaction>...</Transaction>
+    <PaymentInformation>
+</DirectDebit>
+```
+
+Se puede argumentar que este documento está diseñado para que lo generen y lean
+máquinas, por lo que no es necesario que las personas sean capaces de leerlo,
+pero quienes escribimos el software que se encarga tanto de generar como de leer
+este tipo de documentos, somos humanos, y comprender de un simple vistazo que es
+cada parte del documento, nos facilita muchísimo la vida.
+
+También se puede argumentar que a través de la red se mueven cientos de miles de
+documentos como este cada día, y por lo tanto usar palabras más cortas ahorra
+mucho ancho de banda. Si esto es realmente una preocupación, XML no es el
+formato adecuado ya que obliga a repetir cada etiqueta dos veces. Los formatos
+de intercambio de información binaria como
+[protobuf](https://developers.google.com/protocol-buffers) serían mucho más
+adecuados para ahorrar ancho de banda.
+
+Por desgracia, esto es algo que se lleva viendo en el mundo de la programación
+desde tiempos inmemorables. En la propia librería estándar del lenguaje C
+encontramos funciones como
+[`strcmp`](https://www.programiz.com/c-programming/library-function/string.h/strcmp)
+que perfectamente se podría haber llamado `compare_strings`.
+
+Me gustaría aprovechar mi blog para hacer un llamamiento a cambiar esta
+práctica, por favor, **no eliminéis letras de forma arbitraria para acortar
+palabras**. Las vocales existen, usadlas.
