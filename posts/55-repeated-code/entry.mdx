@@ -1,0 +1,77 @@
+---
+title: "When to extract repeated code"
+slug: repeated-code
+author: montyclt
+publishDate: 2025-09-29
+license: CC BY 4.0
+discussionId: 55
+tags:
+ - design
+---
+
+Today I received an email from [Codely](https://codely.com/en)'s newsletter about rules
+for simple design.
+
+One of the rules that the email mentions is about avoiding repeated code. The email says:
+
+> **No duplicación.**
+> Si un mismo conocimiento o lógica está en más de un sitio, es probable que al modificar
+> un componente, se tengan que tocar los otros.
+>
+> **Esta regla hay que interpretarla bien**, si no puede ser muy problemática ya que podemos
+> llenar todo el código de abstracciones prematuras.
+>
+> Hay diversas técnicas sobre como actuar, pero la más recomendada es **la regla del 3**:
+> Hasta que no lo veas duplicado tres veces, no te plantees abstraerlo.
+
+Translated to English:
+> **No duplication.**
+> If the same knowledge or logic is in more than one place, it is likely that you will have to
+> touch the other places when you modify a component.
+>
+> **This rule has to be interpreted well,** or it can be very problematic because we can fill
+> the code with premature abstractions.
+>
+> There are several techniques on how to act, but the most recommended is the **rule of three**:
+> Until you see it duplicated three times, do not think about abstracting it.
+
+The "rule of three" is **wrong**.
+
+I agree that adding abstractions to any repeated code is a bad idea. However, the way
+to know when to extract repeated code vs. when to leave the repeated code is not about the number
+of times it is repeated, but about the nature of the code.
+
+You should extract repeated code when the duplication represents the **same concept** in your domain.
+
+In other words: if a change to the business logic should apply to all instances of the duplicated code,
+then extract it. If different instances might evolve independently based on different business requirements,
+leave them separate.
+
+The key question to ask is: **"Does this duplication represent accidental similarity or the same
+underlying concept?"**
+
+I work at an [MVNO company](https://www.vadavo.com) (Mobile Virtual Network Operator), so I'll give an example in this domain.
+
+An MVNO can have multiple providers that it uses to connect to the network, so imagine a function to
+connect to that provider. Each provider could have a different way to connect to the network, so
+the logic of that function could be different for each provider. Now, imagine that the main providers
+use the same backend implementation, so the logic of the function could be the same for all the
+providers. If we have ten providers and eight of them use the same backend, the function to connect to the
+network could be repeated eight times.
+
+In this case, we should leave the repeated code as is because, while they are currently repeated, it makes
+sense that they could be evolved separately. A specific provider could change their backend while
+the other seven leave the original backend unchanged, so we need to be able to change the code of the function
+for a specific provider.
+
+In this case, we shouldn't extract the repeated code because, while they are currently repeated, it makes no
+sense that they could be evolved separately.
+
+Now, imagine a specific logic to format the customer name. Our application is simple, and today
+it is used only in the customer list and the specific customer detail. So, it is repeated only
+in those two places.
+
+But this logic does not make sense to evolve separately. If we change the format of the customer name,
+we have to change the format of the customer name in both places. We should create a function to format
+the customer name and use it in both places. It's used only two times, but it should be extracted into a
+function.
