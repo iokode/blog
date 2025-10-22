@@ -1,0 +1,100 @@
+---
+title: "How I write CSS"
+slug: css
+author: montyclt
+publishDate: 2025-10-22
+license: CC BY 4.0
+discussionId: 58
+tags:
+ - design
+ - web-frontend
+---
+
+At [VADAVO](https://www.vadavo.com), the company where I work, we are in the process of creating
+a [visual identity](https://ds.vadavo.com/), an aspect that I love, even when I don't have a creative neither marketing profile.
+
+To achieve this, my coworker is creating a design system in Figma, and I am in charge of implementing it in CSS.
+It's quite an important project that requires taking it seriously, writing maintainable and well-documented stylesheets.
+
+This isn't the first time I've faced something like this. When I wrote the CSS stylesheet for this blog, I
+already experimented with a way of writing CSS that would help me make it maintainable. However, back then,
+I didn't have a design made in Figma by a professional UI designer.
+
+## CSS Architecture
+Back then I took the [CSS architecture course from Codely that Rafa and Núria](https://codely.com/en/courses/css-architecture-sah6) created.
+I learned patterns for [class naming](https://getbem.com/) and for [component organization](https://atomicdesign.bradfrost.com/). However, the solution I opted
+for is more personal and simpler.
+
+## Naming Patterns
+
+I dislike patterns like BEM because they generate very long class names, and when using them on HTML code,
+it becomes tiring to look at and difficult to maintain when seeing tags with such long class names.
+
+This would be an example of a card component, with a variant and a nested element using BEM:
+
+```html
+<div class="alert alert--info">
+    <div class="alert__header">Thank you!</div>
+    <div class="alert__body">
+        <p>Thanks for reading IOKode.</p>
+    </div>
+</div>
+```
+
+This is a simple example on there are few variants, modifiers or nested elements, and it's already painful
+to my eyes. In the past I had to deal with [Metronic 5](https://keenthemes.com/metronic), a complete HTML template that uses BEM, and it was hell.
+
+Instead, I prefer to simply use a class name, both for the component and for its modifications and nested components,
+like this:
+
+```html
+<div class="alert info">
+    <div class="header">Thank you!</div>
+    <div class="body">
+        <p>Thanks for reading IOKode.</p>
+    </div>
+</div>
+```
+
+For me, this is the maximum possible simplicity: a class that indicates it's a card, another class for the variant
+without repeating the component name and a class for nested components without repeating the class name
+of the component they belong to.
+
+### Avoiding Collisions
+
+Since the first version of CSS, there have been tools to achieve this simplicity without class collisions, using
+adjacent and nesting selectors. However, writing these in stylesheets was cumbersome and led to stylesheets complicated
+to maintain.
+
+However, we've had CSS preprocessors like Sass or Less at our disposal for many years now, which solve this problem
+thanks to the nesting feature. Nesting has been so popular that it's even used for BEM and was introduced into the
+CSS specification in 2023.
+
+## Organization patterns
+
+I like those patterns more than the naming patterns, but I found them a bit too complex for my needs. I usually don't
+need to split a component into a lot of different parts. In my case, I usually group components by category, and then
+I put each component in a separate source file.
+
+## The difference between styles and layout
+
+When I create components, I never define things like padding or margin outside the component. The component itself
+should be placed in any part of the page. The pages have their own layout that positions the components.
+
+## The `z-index` Property
+
+It's very common to use the `999999999` value for the `z-index` property. That's an aberration.
+In my case, it's very rare to need more than two or three layers on the z axis, so I always start with `1`
+and then I increment by `1` for each layer. The maximum value I needed was `2`.
+
+## The CSS variables and the custom properties
+
+A lot of CSS pre-processors allow you to define CSS variables and then use them in your stylesheets. In the past,
+I used to use them to define values from the design system like colors or fonts. Those "variables" in reality are
+more like to constants than variables because they are just replaced in the resulting CSS.
+
+Today I do not recomment anymore since CSS has native support for custom properties. The main advantage of using
+custom properties is that they can be modified in runtime, so you can have a theme file that it just changes the
+values of the custom properties. In this blog, I use them for switching between light and dark themes.
+
+In any case, if the value won't change, then you can use your pre-processors variables.
