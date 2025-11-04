@@ -10,25 +10,27 @@ tags:
  - web-frontend
 ---
 
-At [VADAVO](https://www.vadavo.com), the company where I work, we are in the process of creating
-a [visual identity](https://ds.vadavo.com/), an aspect that I love, even when I don't have a creative neither marketing profile.
+At [VADAVO](https://www.vadavo.com), the company on which I work, we are in the process of creating a [visual identity](https://ds.vadavo.com/), an aspect
+that I love, even when I don't have a creative neither marketing profile.
 
-To achieve this, my coworker is creating a design system in Figma, and I am in charge of implementing it in CSS.
-It's quite an important project that requires taking it seriously, writing maintainable and well-documented stylesheets.
+To achieve this, my UX designer coworker is creating a design system in [Figma](https://www.figma.com/), and I am in charge of implementing it in CSS.
+It's an important project that requires taking it seriously, so writing maintainable and well-documented stylesheets
+is a must.
 
 This isn't the first time I've faced something like this. When I wrote the CSS stylesheet for this blog, I
-already experimented with a way of writing CSS that would help me make it maintainable. However, back then,
-I didn't have a design made in Figma by a professional UI designer.
+already experimented with a way of writing CSS that would help me make it maintainable. However,
+I didn't have a design made in Figma by a professional UI designer (it isn't necessary to have one).
 
 ## CSS Architecture
-Back then I took the [CSS architecture course from Codely that Rafa and Núria](https://codely.com/en/courses/css-architecture-sah6) created.
-I learned patterns for [class naming](https://getbem.com/) and for [component organization](https://atomicdesign.bradfrost.com/). However, the solution I opted
-for is more personal and simpler.
+Some years ago, I took the [CSS architecture course from Codely](https://codely.com/en/courses/css-architecture-sah6) that Rafa and Núria created. In this course,
+I learned patterns for [class naming](https://getbem.com/) and for [component organization](https://atomicdesign.bradfrost.com/). However, the solution I opted for
+is more personal and simpler.
 
 ## Naming Patterns
+Those patterns are a set of rules on how to name classes and ids.
 
-I dislike patterns like BEM because they generate very long class names, and when using them on HTML code,
-it becomes tiring to look at and difficult to maintain when seeing tags with such long class names.
+I dislike patterns like BEM because they generate very long class names and, when using them on HTML code,
+it becomes difficult to maintain with such long class names. This is the same reason why I dislike [Tailwind](https://x.com/Montyclt/status/1805653015225155991).
 
 This would be an example of a card component, with a variant and a nested element using BEM:
 
@@ -44,8 +46,10 @@ This would be an example of a card component, with a variant and a nested elemen
 This is a simple example on there are few variants, modifiers or nested elements, and it's already painful
 to my eyes. In the past I had to deal with [Metronic 5](https://keenthemes.com/metronic), a complete HTML template that uses BEM, and it was hell.
 
-Instead, I prefer to simply use a class name, both for the component and for its modifications and nested components,
-like this:
+Patterns like the Bootstrap's naming pattern are better for me, but I dislike repeating the class for variants.
+
+Instead, I prefer to use a simple class name, both for the component and for its modifications and nested components,
+without repeating them, like this:
 
 ```html
 <div class="alert info">
@@ -56,45 +60,86 @@ like this:
 </div>
 ```
 
-For me, this is the maximum possible simplicity: a class that indicates it's a card, another class for the variant
+For me, this is the perfect naming pattern: a class that indicates the component (a card), another class for the variant
 without repeating the component name and a class for nested components without repeating the class name
 of the component they belong to.
 
+An important thing here that I do is to [use complete class names and avoid abbreviations](https://iokode.blog/posts/alergia-vocales/). I prefer `button`
+over `btn`.
+
 ### Avoiding Collisions
+`info`, `header` or `body` are generic class names and selecting it directly could lead to collisions.
 
 Since the first version of CSS, there have been tools to achieve this simplicity without class collisions, using
-adjacent and nesting selectors. However, writing these in stylesheets was cumbersome and led to stylesheets complicated
-to maintain.
+[combinators](https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Combinators). However, writing these selectors in stylesheets was cumbersome
+and led to stylesheets complicated to maintain.
 
-However, we've had CSS preprocessors like Sass or Less at our disposal for many years now, which solve this problem
-thanks to the nesting feature. Nesting has been so popular that it's even used for BEM and was introduced into the
-CSS specification in 2023.
+CSS preprocessors like Sass or Less solved this problem with the [nesting feature](!todo CSS nesting). Nesting has been so popular
+that it's even used for BEM and was introduced into the CSS specification in 2023.
 
-## Organization patterns
+In a component like the above card, I always use a child combinator like this:
 
-I like those patterns more than the naming patterns, but I found them a bit too complex for my needs. I usually don't
-need to split a component into a lot of different parts. In my case, I usually group components by category, and then
-I put each component in a separate source file.
+```css
+.card {
+    /* ... */
 
-## The difference between styles and layout
+    > .header {
+        /* ... */
+    }
 
+    > .body {
+        /* ... */
+    }
+}
+```
+
+## Organizational patterns
+In general, I like those patterns more than the naming patterns, but I found patterns like Atomic Design a bit too
+complex for my needs. I usually don't need to split a component into a lot of different parts. In my case, my
+organizational pattern is based on three types of stylesheet files: properties, components and layout.
+
+### Properties
+Properties are some decisions that affect all components and layouts, like the colors, fonts, spacing, sizes, etc. 
+I usually put them in specific files using [custom properties](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascading_variables/Using_CSS_custom_properties).
+
+### The difference between styles and layout
 When I create components, I never define things like padding or margin outside the component. The component itself
 should be placed in any part of the page. The pages have their own layout that positions the components.
 
-## The `z-index` Property
+### Directory structure summary
+``` !todo convert to directory structure
+# properties/
+## colors.css
+## fonts.css
+## borders.css
+# components/
+## button.css
+## card.css
+## input.css
+```
 
+A `layout` directory doesn't exist here because I set the layout with the page that it belongs.
+
+# When to select classes, ids and tag names
+!todo
+
+## The `z-index` Property
 It's very common to use the `999999999` value for the `z-index` property. That's an aberration.
 In my case, it's very rare to need more than two or three layers on the z axis, so I always start with `1`
 and then I increment by `1` for each layer. The maximum value I needed was `2`.
 
 ## The CSS variables and the custom properties
-
 A lot of CSS pre-processors allow you to define CSS variables and then use them in your stylesheets. In the past,
 I used to use them to define values from the design system like colors or fonts. Those "variables" in reality are
 more like to constants than variables because they are just replaced in the resulting CSS.
 
 Today I do not recomment anymore since CSS has native support for custom properties. The main advantage of using
-custom properties is that they can be modified in runtime, so you can have a theme file that it just changes the
-values of the custom properties. In this blog, I use them for switching between light and dark themes.
+custom properties is that they could vary their value in runtime, so you can have a theme file that it just changes the
+values of the custom properties or based on media queries. In this blog, I use them for switching between light
+and dark themes.
 
-In any case, if the value won't change, then you can use your pre-processors variables.
+Only in the case that you're sure a value won't change, then you can use your pre-processors variables, but I don't
+recommend using a pre-processor anymore (I'll explain it later in this post).
+
+## Why I don't recommend using a pre-processor
+!todo
