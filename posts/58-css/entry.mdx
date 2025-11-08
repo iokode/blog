@@ -61,7 +61,7 @@ without repeating them, like this:
 ```
 
 For me, this is the perfect naming pattern: a class that indicates the component (a card), another class for the variant
-without repeating the component name and a class for nested components without repeating the class name
+without repeating the component name, and a class for nested components without repeating the class name
 of the component they belong to.
 
 An important thing here that I do is to [use complete class names and avoid abbreviations](https://iokode.blog/posts/alergia-vocales/). I prefer `button`
@@ -94,34 +94,106 @@ In a component like the above card, I always use a child combinator like this:
 ```
 
 ## Organizational patterns
-In general, I like those patterns more than the naming patterns, but I found patterns like Atomic Design a bit too
-complex for my needs. I usually don't need to split a component into a lot of different parts. In my case, my
-organizational pattern is based on three types of stylesheet files: properties, components and layout.
+Patterns like Atomic Design a bit too complex for my needs. I usually don't need to split a component into a lot
+of different parts. In my case, my organizational pattern is based on three types of stylesheet files: tokens,
+components, and layout.
 
-### Properties
-Properties are some decisions that affect all components and layouts, like the colors, fonts, spacing, sizes, etc. 
+### Tokens
+Tokens are some decisions that affect all components and layouts, like the colors, fonts, spacing, sizes, etc. 
 I usually put them in specific files using [custom properties](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascading_variables/Using_CSS_custom_properties).
 
-### The difference between styles and layout
+### Components
+Components are the building blocks of the UI. They are reusable and can be used in multiple pages.
+
+### Layout
 When I create components, I never define things like padding or margin outside the component. The component itself
-should be placed in any part of the page. The pages have their own layout that positions the components.
+should be placed in any part of the page. The pages have their own layout that positions their elements and components.
 
 ### Directory structure summary
-``` !todo convert to directory structure
-# properties/
-## colors.css
-## fonts.css
-## borders.css
-# components/
-## button.css
-## card.css
-## input.css
+```
+css/
+├── tokens/
+│   ├── colors.css
+│   ├── fonts.css
+│   └── borders.css
+└── components/
+    ├── button.css
+    ├── card.css
+    └── input.css
 ```
 
-A `layout` directory doesn't exist here because I set the layout with the page that it belongs.
+A `layout` directory doesn't exist here because I set the layout with the page that it belongs. If it is not possible,
+then I create a `layout` directory and name each layout file with the name of the page it belongs to, like `index.css`
+or `archive.css`.
 
-# When to select classes, ids and tag names
-!todo
+## Selectors: when I use classes, ids, or tags
+I use classes always to refer to a component, even if they are designed to work with a small subset of tags.
+For example, a button is a component that only works with the `<button>` and `<input type="submit">` tags,
+but I still require the `.button` class to refer to it instead of using the `button, input[type="submit"]` selector.
+
+In the layout stylesheets, I usually use tags and ids to select the layout elements.
+
+## Declaration order and classification of CSS properties.
+I initially created my own property classification and order for CSS properties with these groups:
+- Boxing
+- Flex
+- Grid
+- Typography
+- Style
+- Others
+
+If you see the styles of this blog engine in GitHub, you'll see that I use this order.
+
+But then, I found a [guide from @mdo, the creator of Bootstrap with another proposal for classifying and ordering CSS
+properties](https://codeguide.co/#declaration-order). For the following projects, I'll follow it because I consider it well-argued, so I avoid reinventing
+
+This is the @mdo's declaration order and classification:
+- Positioning
+- Box model
+- Typographic
+- Visual
+- Misc
+
+## Reset
+I always use the [Bootstrap Reboot](https://getbootstrap.com/docs/4.0/content/reboot/) library to reset the browser
+styles.
+
+As an anecdote, recently I was working on a project without any reset, and I found that some boxes were not taking the
+correct size. I needed to set the `box-sizing` property manually for all the elements.
+
+## The `!important` rule
+I never use the `!important` rule. I always use the cascade and the specificity of CSS selectors to override styles.
+
+## Units
+I use different units depending on the context.
+
+I prefer relative units (`rem`, `em`) over absolute ones (`px`) in most cases because they scale better with user
+preferences and maintain visual hierarchy. The only exception is for pixel-perfect details.
+
+I use viewport-relative units (`vw`, `vh`, `%`) for creating fully responsive layouts that automatically adapt
+to the browser window size. They're especially useful dynamic sizing that needs to scale proportionally with the
+viewport, avoiding usage of media queries for this purpose.
+
+I reserve physical units (`cm`, `mm`, `in`) for print stylesheets.
+
+In resume:
+- `rem` and `em` for spacing, typography, and component sizes.
+- `px` for pixel-perfect details like borders.
+- `%`, `vw`, `vh` for layout and responsive elements that need to adapt to viewport.
+- `cm`, `mm`, `in` for print media where physical measurements matter.
+
+## Responsive design
+When I need to make a responsive design, the first strategy that I follow is to use the relative-to-viewport units, so
+I avoid writing too many media queries.
+
+Then, I set the breakpoints in a file inside the `tokens` directory, and I write the base CSS for the smallest
+breakpoint, and then I write the media queries for the other breakpoints.
+
+The breakpoints that I usually use are:
+- 768px (tablet)
+- 992px (desktop)
+- 1200px (large desktop)
+- 1400px (extra large desktop)
 
 ## The `z-index` Property
 It's very common to use the `999999999` value for the `z-index` property. That's an aberration.
@@ -129,17 +201,31 @@ In my case, it's very rare to need more than two or three layers on the z axis, 
 and then I increment by `1` for each layer. The maximum value I needed was `2`.
 
 ## The CSS variables and the custom properties
-A lot of CSS pre-processors allow you to define CSS variables and then use them in your stylesheets. In the past,
-I used to use them to define values from the design system like colors or fonts. Those "variables" in reality are
-more like to constants than variables because they are just replaced in the resulting CSS.
+Many CSS pre-processors allow you to define variables. In the past, I used to use them to define tokens from the
+design system like colors or fonts.
 
-Today I do not recomment anymore since CSS has native support for custom properties. The main advantage of using
-custom properties is that they could vary their value in runtime, so you can have a theme file that it just changes the
-values of the custom properties or based on media queries. In this blog, I use them for switching between light
-and dark themes.
+In most preprocessors like Sass or Less, these are processed at compile-time—they're replaced with their values in
+the resulting CSS. Some preprocessors might work differently, but compile-time is the standard approach.
+
+I don't recommend preprocessor variables since CSS has native support for custom properties.
+CSS custom properties work at runtime, so you can change them with media queries or JavaScript. In this blog,
+I use them for theme switching. With preprocessor variables, you'd need to compile separate CSS files for each theme.
 
 Only in the case that you're sure a value won't change, then you can use your pre-processors variables, but I don't
 recommend using a pre-processor anymore (I'll explain it later in this post).
 
 ## Why I don't recommend using a pre-processor
-!todo
+There are two main reasons.
+
+The most important features of pre-processors now have native alternatives in CSS, even when they are implemented
+differently.
+
+An example is the use of Sass's macros to generate values for a property based on dark or light themes, but with
+native CSS you can achieve the same result with the custom-properties that can be changed in runtime.
+
+Additionally, integration can be challenging with certain frameworks that either don't support pre-processors at all
+or only work with specific ones. For example, Astro supports Sass without problems, but Blazor doesn't.
+
+Note that that doesn't mean that you couldn't use a pre-processor to generate a native CSS file in the frameworks,
+but that can be tricky when the framework is designed to write the local styles in the same file as the HTML, like
+Vue.
