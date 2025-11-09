@@ -10,7 +10,7 @@ tags:
  - web-frontend
 ---
 
-At [VADAVO](https://www.vadavo.com), the company on which I work, we are in the process of creating a [visual identity](https://ds.vadavo.com/), an aspect
+At [VADAVO](https://www.vadavo.com), the company where I work, we are in the process of creating a [visual identity](https://ds.vadavo.com/), an aspect
 that I love, even though I have neither a creative nor a marketing profile.
 
 To achieve this, my UX designer coworker is creating a design system in [Figma](https://www.figma.com/), and I am in charge of implementing it in CSS.
@@ -22,7 +22,7 @@ already experimented with a way of writing CSS that would help me make it mainta
 I didn't have a design made in Figma by a professional UI designer (it isn't necessary to have one).
 
 This post is a collection of my practices for writing maintainable CSS (and maintainable HTML as a side effect), so I
-write it in first-person.
+write it in the first person.
 
 ## CSS Architecture
 Some years ago, I took the [CSS architecture course from Codely](https://codely.com/en/courses/css-architecture-sah6) that Rafa and Núria created. In this course,
@@ -35,7 +35,7 @@ Those patterns are a set of rules on how to name classes and ids.
 I dislike patterns like BEM because they generate very long class names and, when using them on HTML code,
 it becomes difficult to maintain with such long class names. This is the same reason why I dislike [Tailwind](https://x.com/Montyclt/status/1805653015225155991).
 
-This would be an example of a card component, with a variant and a nested element using BEM:
+This would be an example of an alert component, with a variant and a nested element using BEM:
 
 ```html
 <div class="alert alert--info">
@@ -79,15 +79,15 @@ over `btn`.
 
 Since the first version of CSS, there have been tools to achieve this without class collisions, using
 [combinators](https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Combinators). However, writing these selectors in stylesheets was cumbersome
-and led to stylesheets complicated to maintain.
+and led to hard-to-maintain stylesheets.
 
 CSS preprocessors like Sass or Less solved this problem with the [nesting feature](https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Nesting). Nesting has been so popular
 that it's even [used in BEM](https://whatislove.dev/articles/bem-modifiers-in-pure-css-nesting/) and was introduced into the CSS specification in 2023.
 
-In a component like the above card, I always use a child combinator like this:
+In a component like the above alert, I always use a child combinator like this:
 
 ```css
-.card {
+.alert {
     /* ... */
 
     > .header {
@@ -155,8 +155,8 @@ I use classes always to refer to a component, even if they are designed to work 
 For example, a button is a component that only works with the `<button>` and `<input type="submit">` tags,
 but I still require the `.button` class to refer to it instead of using the `button, input[type="submit"]` selector.
 
-In the layout stylesheets, I usually use tags and ids to select the elements. There is not a collision risk with other
-pages because the layout stylesheets are included only on the pages that they belong.
+In the layout stylesheets, I usually use tags and ids to select the elements. There isn’t a collision risk with other
+pages because the layout stylesheets are included only on the pages they belong to.
 
 ## Theming
 If I need to support multiple themes, I usually override the default values of the tokens with the theme values. It's
@@ -175,11 +175,11 @@ I initially created my own property classification and order for CSS properties 
 
 If you see the styles of this blog engine in GitHub, you'll see that I use this order.
 
-But then, I found [a guide](https://codeguide.co/#declaration-order) from @mdo, the creator of Bootstrap, with another proposal for classifying and ordering CSS
+But then, I found [a guide](https://codeguide.co/#declaration-order) from [@mdo](https://markdotto.com/), the creator of [Bootstrap](https://getbootstrap.com/), with another proposal for classifying and ordering CSS
 properties. For the following projects, I'll follow it because I consider it well-argued, and following a
 widely respected convention is better than inventing my own.
 
-This is the @mdo's declaration order and classification:
+This is @mdo's declaration order and classification:
 - Positioning
 - Box model
 - Typographic
@@ -187,7 +187,7 @@ This is the @mdo's declaration order and classification:
 - Misc
 
 ## Reset
-I always use the [Bootstrap Reboot](https://getbootstrap.com/docs/4.0/content/reboot/) library to reset the browser
+I always use the [Bootstrap Reboot](https://getbootstrap.com/docs/5.3/content/reboot/) library to reset the browser
 styles.
 
 As an anecdote, recently I was working on a project without any reset, and I found that some boxes were not taking the
@@ -221,12 +221,12 @@ The breakpoints can vary depending on the application, but I usually use:
 - 1200px (large desktop)
 - 1400px (extra large desktop)
 
-There is not a mobile breakpoint because I treat any viewport smaller than the `tablet` breakpoint as mobile.
+I don’t define a mobile breakpoint because I treat any viewport smaller than the `tablet` breakpoint as mobile.
 
 ## The `z-index` Property
 It's very common to use the `999999999` value for the `z-index` property. That's an aberration.
-In my case, it's very rare to need more than two or three layers on the z axis, so I always start with `1`
-and then I increment by `1` for each layer. The maximum value I needed was `2`.
+In my case, it's very rare to need more than two or three layers on the z-axis, so I always start with `1`
+and then I increment by `1` for each layer. The highest I've needed was `2`.
 
 ## The CSS variables and the custom properties
 Many CSS preprocessors allow you to define variables. In the past, I used to use them to define tokens from the
@@ -248,11 +248,11 @@ The most important features of preprocessors now have native alternatives in CSS
 differently.
 
 An example is the use of Sass's macros to generate values for a property based on dark or light themes, but with
-native CSS you can achieve the same result with the custom-properties that can be changed in runtime.
+native CSS you can achieve the same result with custom properties that can be changed at runtime.
 
 Additionally, integration can be challenging with certain frameworks that either don't support preprocessors at all
 or only work with specific ones. For example, Astro supports Sass without problems, but Blazor doesn't.
 
-Note that that doesn't mean that you couldn't use a preprocessor to generate a native CSS file in the frameworks,
+Note that this doesn't mean that you couldn't use a preprocessor to generate a native CSS file in the frameworks,
 but that can be tricky when the framework is designed to write the local styles in the same file as the HTML, like
 Vue.
