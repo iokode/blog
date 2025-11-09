@@ -1,0 +1,258 @@
+---
+title: "How I write CSS"
+slug: css
+author: montyclt
+publishDate: 2025-10-22
+license: CC BY 4.0
+discussionId: 58
+tags:
+ - design
+ - web-frontend
+---
+
+At [VADAVO](https://www.vadavo.com), the company where I work, we are in the process of creating a [visual identity](https://ds.vadavo.com/), an aspect
+that I love, even though I have neither a creative nor a marketing profile.
+
+To achieve this, my UX designer coworker is creating a design system in [Figma](https://www.figma.com/), and I am in charge of implementing it in CSS.
+It's an important project that requires taking it seriously, so writing maintainable and well-documented stylesheets
+is a must.
+
+This isn't the first time I've faced something like this. When I wrote the CSS stylesheet for this blog, I
+already experimented with a way of writing CSS that would help me make it maintainable. However,
+I didn't have a design made in Figma by a professional UI designer (it isn't necessary to have one).
+
+This post is a collection of my practices for writing maintainable CSS (and maintainable HTML as a side effect), so I
+write it in the first person.
+
+## CSS Architecture
+Some years ago, I took the [CSS architecture course from Codely](https://codely.com/en/courses/css-architecture-sah6) that Rafa and Núria created. In this course,
+I learned patterns for [class naming](https://getbem.com/) and for [component organization](https://atomicdesign.bradfrost.com/). However, the solution I opted for
+is more personal and simpler.
+
+## Naming Patterns
+Those patterns are a set of rules on how to name classes and ids.
+
+I dislike patterns like BEM because they generate very long class names and, when using them on HTML code,
+it becomes difficult to maintain with such long class names. This is the same reason why I dislike [Tailwind](https://x.com/Montyclt/status/1805653015225155991).
+
+This would be an example of an alert component, with a variant and a nested element using BEM:
+
+```html
+<div class="alert alert--info">
+    <div class="alert__header">Thank you!</div>
+    <div class="alert__body">
+        <p>Thanks for reading IOKode.</p>
+    </div>
+</div>
+```
+
+This is a simple example where there are few variants, modifiers or nested elements, and it's already painful
+to my eyes. In the past I had to deal with [Metronic 5](https://keenthemes.com/metronic), a complete HTML template that uses BEM, and it was hell.
+
+Bootstrap's naming pattern is better for me, but I dislike repeating classes for variants.
+
+Instead, I prefer to use a simple class name, both for the component and for its modifications and nested components,
+without repeating the component name, like this:
+
+```html
+<div class="alert info">
+    <div class="header">Thank you!</div>
+    <div class="body">
+        <p>Thanks for reading IOKode.</p>
+    </div>
+</div>
+```
+
+For me, this is the perfect naming pattern: a class that indicates the component (an alert), another class for the variant
+without repeating the component name, and a class for nested components without repeating the class name
+of the component they belong to.
+
+This reduces the cognitive load of reading the HTML code, making it easier to maintain and even easier to make it
+accessible: If I am spending mental energy parsing `btn btn-primary btn-lg btn-block` vs
+just `button primary large full`, then I have more bandwidth to think "wait, does this button need `aria-label`?"
+
+An important thing here that I do is to [use complete class names and avoid abbreviations](https://iokode.blog/posts/alergia-vocales/). I prefer `button`
+over `btn`.
+
+### Avoiding Collisions
+`info`, `header` or `body` are generic class names and selecting it directly could lead to collisions.
+
+Since the first version of CSS, there have been tools to achieve this without class collisions, using
+[combinators](https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Styling_basics/Combinators). However, writing these selectors in stylesheets was cumbersome
+and led to hard-to-maintain stylesheets.
+
+CSS preprocessors like Sass or Less solved this problem with the [nesting feature](https://developer.mozilla.org/en-US/docs/Web/CSS/Guides/Nesting). Nesting has been so popular
+that it's even [used in BEM](https://whatislove.dev/articles/bem-modifiers-in-pure-css-nesting/) and was introduced into the CSS specification in 2023.
+
+In a component like the above alert, I always use a child combinator like this:
+
+```css
+.alert {
+    /* ... */
+
+    > .header {
+        /* ... */
+    }
+
+    > .body {
+        /* ... */
+    }
+}
+```
+
+## Organizational patterns
+Patterns like Atomic Design are a bit too complex for my needs. I usually don't need to split a component into a lot
+of different parts. In my case, my organizational pattern is based on three types of stylesheet files: tokens,
+components, and layout.
+
+### Tokens
+Tokens are design decisions that affect all components and layouts, like the colors, fonts, spacing, sizes, etc.
+I define them in specific files using [custom properties](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascading_variables/Using_CSS_custom_properties).
+
+### Components
+Components are the building blocks of the UI. They are reusable and can be used in multiple pages.
+
+### Layout
+When I create components, I never define external spacing like padding or margin. The component itself should be
+self-contained and placeable anywhere on the page. Pages have their own layout that positions their elements and
+components.
+
+### Directory structure summary
+```
+css/
+├── tokens/
+│   ├── colors.css
+│   ├── fonts.css
+│   └── borders.css
+└── components/
+    ├── button.css
+    ├── card.css
+    └── input.css
+```
+
+A `layout` directory doesn't exist because I set the layout in the page file it belongs to. If it is not possible,
+then I create a `layout` directory and name each layout file with the name of the page it belongs to, like `index.css`
+or `archive.css`.
+
+```
+css/
+├── tokens/
+│   ├── colors.css
+│   ├── fonts.css
+│   └── borders.css
+├── components/
+│   ├── button.css
+│   ├── card.css
+│   └── input.css
+└── layout/
+    ├── index.css
+    ├── archive.css
+    └── authors.css
+```
+
+## Selectors: when I use classes, ids, or tags
+I use classes always to refer to a component, even if they are designed to work with a small subset of tags.
+For example, a button is a component that only works with the `<button>` and `<input type="submit">` tags,
+but I still require the `.button` class to refer to it instead of using the `button, input[type="submit"]` selector.
+
+In the layout stylesheets, I usually use tags and ids to select the elements. There isn’t a collision risk with other
+pages because the layout stylesheets are included only on the pages they belong to.
+
+## Theming
+If I need to support multiple themes, I usually override the default values of the tokens with the theme values. It's
+rare to need to override the values of the components because they load the theme values from the tokens.
+
+Then, I import the theme always after the base stylesheets, taking advantage of the cascade.
+
+## Declaration order and classification of CSS properties.
+I initially created my own property classification and order for CSS properties with these groups:
+- Boxing
+- Flex
+- Grid
+- Typography
+- Style
+- Others
+
+If you see the styles of this blog engine in GitHub, you'll see that I use this order.
+
+But then, I found [a guide](https://codeguide.co/#declaration-order) from [@mdo](https://markdotto.com/), the creator of [Bootstrap](https://getbootstrap.com/), with another proposal for classifying and ordering CSS
+properties. For the following projects, I'll follow it because I consider it well-argued, and following a
+widely respected convention is better than inventing my own.
+
+This is @mdo's declaration order and classification:
+- Positioning
+- Box model
+- Typographic
+- Visual
+- Misc
+
+## Reset
+I always use the [Bootstrap Reboot](https://getbootstrap.com/docs/5.3/content/reboot/) library to reset the browser
+styles.
+
+As an anecdote, recently I was working on a project without any reset, and I found that some boxes were not taking the
+correct size. I needed to set the `box-sizing` property manually for all the elements.
+
+## The `!important` rule
+I never use the `!important` rule. I always use the cascade and the specificity of CSS selectors to override styles.
+
+## Units
+I use different units depending on the context.
+
+I prefer relative units (`rem`, `em`) over absolute ones (`px`) in most cases because they scale better with user
+preferences and maintain visual hierarchy. The only exception is for pixel-perfect details.
+
+I use viewport-relative units (`vw`, `vh`, `%`) for creating fully responsive layouts that automatically adapt
+to the browser window size. They're especially useful for dynamic sizing that needs to scale proportionally with the
+viewport, avoiding usage of media queries for this purpose.
+
+I reserve physical units (`cm`, `mm`, `in`) for print stylesheets.
+
+## Responsive design
+When I need to make a responsive design, the first strategy that I follow is to use the viewport-relative units, so
+I avoid writing too many media queries.
+
+Then, I set the breakpoints in a file inside the `tokens` directory, and I write the base CSS for the smallest
+breakpoint, and then I write the media queries for the other breakpoints.
+
+The breakpoints can vary depending on the application, but I usually use:
+- 768px (tablet)
+- 992px (desktop)
+- 1200px (large desktop)
+- 1400px (extra large desktop)
+
+I don’t define a mobile breakpoint because I treat any viewport smaller than the `tablet` breakpoint as mobile.
+
+## The `z-index` Property
+It's very common to use the `999999999` value for the `z-index` property. That's an aberration.
+In my case, it's very rare to need more than two or three layers on the z-axis, so I always start with `1`
+and then I increment by `1` for each layer. The maximum value I've needed was `2`.
+
+## The CSS variables and the custom properties
+Many CSS preprocessors allow you to define variables. In the past, I used to use them to define tokens from the
+design system like colors or fonts.
+
+In most preprocessors like Sass or Less, these are processed at compile-time—they're replaced with their values in
+the resulting CSS. Some preprocessors might work differently, but compile-time is the standard approach.
+
+I don't recommend preprocessor variables since CSS has native support for custom properties.
+CSS custom properties work at runtime, so you can change them with media queries or JavaScript. In this blog,
+I use them for theme switching. With preprocessor variables, you'd need to compile separate CSS files for each theme.
+
+Only if you're sure a value won't change can you use your preprocessor's variables.
+
+## Why I don't recommend using a preprocessor
+There are two main reasons.
+
+The most important features of preprocessors now have native alternatives in CSS, even when they are implemented
+differently.
+
+An example is the use of Sass's macros to generate values for a property based on dark or light themes, but with
+native CSS you can achieve the same result with custom properties that can be changed at runtime.
+
+Additionally, integration can be challenging with certain frameworks that either don't support preprocessors at all
+or only work with specific ones. For example, Astro supports Sass without problems, but Blazor doesn't.
+
+Note that this doesn't mean that you couldn't use a preprocessor to generate a native CSS file in the frameworks,
+but that can be tricky when the framework is designed to write the local styles in the same file as the HTML, like
+Vue.
