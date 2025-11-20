@@ -1,0 +1,76 @@
+---
+title: "Allergy to Vowels"
+slug: vowels
+author: montyclt
+publishDate: 2025-11-20
+license: CC BY 4.0
+discussionId: 60
+tags:
+ - design
+---
+
+<Alert severity="info">
+    This post is a translation of my own post [Alergia a las vocales](https://iokode.blog/posts/alergia-vocales/).
+    
+    
+</Alert>
+
+Recently, in the project I'm working on at my company, our [product owner](https://www.techtarget.com/searchsoftwarequality/definition/product-owner) asked for the addition of a new feature to the application: integration with the [SEPA](https://www.ecb.europa.eu/paym/retail/sepa/html/index.en.html) payment system.
+
+Integration with SEPA is relatively straightforward. It involves generating a series of XML documents that represent a [direct debit](https://www.europeanpaymentscouncil.eu/what-we-do/sepa-direct-debit). The schema for these XML documents is defined by the [ISO 20022](https://www.iso20022.org/) standard that specifies how companies should communicate with banks.
+
+The task wasn't particularly difficult. It simply involved adding a new use case to the application to export the direct debits (which in our application is a domain entity) into an XML file with the schema defined by the standard.
+
+The problem arises when looking at the XML document itself. Here's a reduced version of it:
+
+```xml
+<Document>
+    <CstmrDrctDbtInitn> <!-- Customer direct debit initn? -->
+        <GrpHdr> <!-- Group header -->
+            <MsgId>4</MsgId> <!-- Message ID -->
+            <CreDtTm>2022-08-31T14:27:02</CreDtTm> <!-- Creation date time -->
+            <NbOfTxs>2</NbOfTxs> <!-- Number of transactions -->
+            <CtrlSum>25.41</CtrlSum> <!-- Total amount -->
+        </GrpHdr>
+
+        <PmtInf> <!-- Payment information -->
+            <DrctDbtTx>...</DrctDbtTx>  <!-- Direct debit transaction -->
+            <DrctDbtTx>...</DrctDbtTx>  <!-- Direct debit transaction -->
+        </PmtInf>
+    </CstmrDrctDbtInitn>
+</Document>
+```
+
+<Alert severity="warning">
+    This document is not real and is not complete. The standard defines quite a few more tags, but you get the idea.
+    
+    
+</Alert>
+
+This document is divided into two parts: a header (`GrpHdr`) with common information and a body (`PmtInf`) with payment information for each of the transactions.
+
+Those who designed this standard, for some reason, have an extreme aversion to using complete words for the tags—and for some reason I can't comprehend, they tend to remove more vowels than consonants—making it extremely difficult for humans to understand this document. The schema could have been something like this, making it much more comprehensible for humans, and everything would have worked the same way:
+
+```xml
+<DirectDebit>
+    <Header>
+        <MessageId>4</MessageId>
+        <CreationDate>2022-08-31T14:27:02</CreationDate>
+        <Transactions>2</Transactions>
+        <Amount>25.41</Amount>
+    </Header>
+
+    <PaymentInformation>
+        <Transaction>...</Transaction>
+        <Transaction>...</Transaction>
+    </PaymentInformation>
+</DirectDebit>
+```
+
+One could argue that this document is designed for machines to generate and read, so it's not necessary for people to be able to read it. However, those of us who write the software responsible for both generating and reading this type of document are humans, and being able to understand at a glance what each part of the document is makes our lives much easier.
+
+It could also be argued that hundreds of thousands of documents like this are transmitted over the network every day, and therefore using shorter words saves a lot of bandwidth. If this is truly a concern, XML is not the appropriate format since it requires repeating each tag twice. Binary information exchange formats like [protobuf](https://developers.google.com/protocol-buffers) would be much more suitable for saving bandwidth.
+
+Unfortunately, this is something that's been seen in the programming world since time immemorial. In the C language's standard library itself, we find functions like [`strcmp`](https://www.programiz.com/c-programming/library-function/string.h/strcmp), which could perfectly well have been called `compare_strings`.
+
+I'd like to use my blog to make a call to change this practice: **please do not arbitrarily remove letters to shorten words. Vowels exist; use them.**
