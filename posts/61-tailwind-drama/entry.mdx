@@ -1,0 +1,73 @@
+---
+title: "Some thoughts about the Tailwind financial problem"
+slug: tailwind-drama
+author: montyclt
+publishDate: 2026-01-11
+license: CC BY 4.0
+discussionId: 61
+tags:
+ - opinionated-framework
+---
+
+<brainstorning>
+- Documentacion es el negocio en tailwind. Los LLM ha reducido el tráfico a la doc, reduciendo mucho los ingresos
+- La primera vez que vi ese modelo fue con Laravel y mi idea a un futuro era aplicar un modelo de monetización similar en Opinionated
+- El caso de Tailwind me hace reflexionar
+- La PR de la discordia, una PR que ayuda a los LLM a entender la doc, fue rechazada porque eso empeora el negocio.
+- Yo jamás aplicaría ese rechazo en Opinionated. Soy fiel partidario de uso de los LLM y creo que deben de poder acceder a la doc, sin limitación (siempre que sea de forma neutra y no acoplado a un LLM concreto / vender-locked).
+- La parte más importante de mi negocio particular ya se ha dado, a pesar de estar en una versión no viable. Es la marca personal, de ahí haber movido el blog a inglés. Es el curriculum que eso me ha dado. Eso se ha cumplido con Dualimind
+- Alejandro me entrevistó a raíz de Opinionated.
+- Me importa más cumplir el principio de herramienta con uso ilimitado que el negocio en sí, porque aunque no funcione el negocio, ya ha funcionado, así como lo que yo escribo. Por eso elegí MIT de 2 clásulas vs GPL o una licencia privativa y CC para los posts. Tal vez aplique también CC a la documentación.
+- Eso va en relación a mi filosofía de la herramienta. Mi negocio no va en limitar la herramienta.
+- ¿Cómo voy a monetizarlo? La respuesta es que ya está monetizado porque me ha dado un buen trabajo.
+</brainstorning>
+
+Recently, Tailwind Labs, the company behind Tailwind CSS, announced that they laid off 75% (three persons) of its
+engineering team due to financial problems.
+
+## A summary of what happened
+
+I'm publishing this post some days ago of the news, so probably you already know what happened. This is not an
+actuality blog (¿blog de actualidad en inglés?), so I don't care about arriving late.
+
+In case you lived in a cave the last week, you can read the history in [this post](https://dev.to/kniraj/tailwind-css-lays-off-75-of-engineering-team-as-ai-tools-disrupt-revenue-model-1l3d),
+but here is a simple summary.
+
+Tailwind is an open-source library under the [MIT license](https://opensource.org/license/mit). Their business model consists of selling related paid
+products using the documentation as conversion funnel. The first time I saw something similar model was in the Laravel
+PHP framework, the framework is free, but there are some paid products and services associated with Laravel that
+are referenced in the documentation.
+
+Due to the LLM disruption, a lot of developers directly ask to LLM instead of navigating the documentation, so they stop
+converting thought the documentation, and that leaded to a financial crisis that resulted in three of the four engineers
+laid off.
+
+## The rejected Pull Request
+
+In the tailwindcss.com GitHub repository, [a PR that generates a llms.txt file were submitted](https://github.com/tailwindlabs/tailwindcss.com/pull/2388).
+After some days of inactivity, an user asked why is not moving and Adam, the creator of Tailwind CSS replied:
+
+> Have more important things to do like figure out how to make enough money for the business to be sustainable right now. And making it easier for LLMs to read our docs just means less traffic to our docs which means less people learning about our paid products and the business being even less sustainable.
+>
+> Just don't have time to work on things that don't help us pay the bills right now, sorry. We may add this one day but closing for now.
+
+## The relationship with OpinionatedFramework and IOKode
+
+OpinionatedFramework is nowadays a project in very early without documentation and specific webpage, but I
+fantasized that someday could be an important project in the dotnet ecosystem. In that case, using Laravel
+as a reference, I planned to offer similar products like paid packages and funnel them from the blog
+(I think documentation is not a good place for advertising). The Tailwind case moved me to reflexionate about
+that business idea because due to the same reason the Tailwind documentation lost traffic, the blog will lose it too.
+
+In my case, I have a very strong opinion about LLM: they are here and will always be with us, and we need to adapt
+to them. That is the reality, regardless if we like or not. As Ayn Rand said, *we can ignore the reality but not the
+consequences of ignoring the reality*. In this case, ignoring LLMs means to be impossible to compete and be relegated to
+forget.
+
+Due that, [I decided that I authorize to use everything I wrote (code, docs, tweets...) to train LLMs](https://x.com/Montyclt/status/1759904379400810596)
+and, of course, to be used by LLMs as provided context. Following this philosophy, a PR like the Tailwind's PR probably
+would be accepted in the IOKode projects. If I don't accept it, it would be due to other reasons
+(vendor-locking, bad practices, etc.) but not to avoiding LLMs to access the data with the intention to move the users
+to the documentation.
+
+If someday OpinionatedFramework went to an important project in the dotnet ecosystem, 
