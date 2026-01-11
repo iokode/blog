@@ -1,0 +1,59 @@
+---
+title: "Some thoughts about the Tailwind financial problem"
+slug: tailwind-drama
+author: montyclt
+publishDate: 2026-01-11
+license: CC BY 4.0
+discussionId: 61
+tags:
+ - opinionated-framework
+ - iokode
+---
+
+Recently, Tailwind Labs, the company behind Tailwind CSS, announced that it laid off 75% (three people) of its engineering team due to financial problems.
+
+## A summary of what happened
+
+I'm publishing this post some days after the news, so you probably already know what happened. This is not a news blog, so I don't care about arriving late.
+
+In case you lived in a cave last week, you can read the story in [this post](https://dev.to/kniraj/tailwind-css-lays-off-75-of-engineering-team-as-ai-tools-disrupt-revenue-model-1l3d), but here is a simple summary.
+
+Tailwind is an open-source library under the [MIT license](https://opensource.org/license/mit). Their business model consists of selling related paid products using the documentation as a conversion funnel. The first time I saw a similar model was with the [Laravel PHP framework](https://laravel.com/): the framework is free, but there are some paid products and services associated with Laravel that are referenced in the documentation.
+
+Due to the LLM disruption, many developers directly ask LLMs instead of navigating the documentation, so they stop converting through the documentation. This led to a financial crisis that resulted in three of the four engineers being laid off.
+
+## The rejected Pull Request
+
+In the [tailwindcss.com](https://tailwindcss.com) GitHub repository, [a PR that generates an llms.txt file was submitted](https://github.com/tailwindlabs/tailwindcss.com/pull/2388). After some days of inactivity, a user asked why it was not moving, and Adam, the creator of Tailwind CSS, replied:
+
+> Have more important things to do like figure out how to make enough money for the business to be sustainable right now. And making it easier for LLMs to read our docs just means less traffic to our docs which means less people learning about our paid products and the business being even less sustainable.
+>
+> Just don't have time to work on things that don't help us pay the bills right now, sorry. We may add this one day but closing for now.
+
+## The relationship with OpinionatedFramework and IOKode
+
+[OpinionatedFramework](https://github.com/iokode/OpinionatedFramework) is currently a project in a very early stage, without documentation or a specific website, but I fantasize that someday it could become an important project in the .NET ecosystem. In that case, using Laravel as a reference, I planned to offer similar products such as paid packages and to funnel them from the blog (I think documentation is not a good place for advertising). The Tailwind case made me reflect on that business idea because, for the same reason the Tailwind documentation lost traffic, the blog would lose it too.
+
+In my case, I have a very strong opinion about LLMs: **they are here and will always be with us, and we need to adapt to them**. That is the reality, regardless of whether we like it or not. As Ayn Rand said, *we can ignore reality, but not the consequences of ignoring reality*. In this case, ignoring LLMs means being unable to compete and being relegated to oblivion.
+
+Because of that, [I decided to authorize the use of everything I write (code, docs, tweets...) to train LLMs](https://x.com/Montyclt/status/1759904379400810596) and, of course, to be used by LLMs as provided context. Following this philosophy, a PR like the Tailwind one would probably be accepted in the IOKode projects. If I didn't accept it, it would be due to other reasons (vendor lock-in, bad practices, etc.), but not to avoid LLMs accessing the data with the intention of pushing users toward the documentation.
+
+## The business behind OpinionatedFramework is already profitable
+
+If someday OpinionatedFramework became an important project in the .NET ecosystem and we offered related products and services, but the business did not profit, I wouldn't care.
+
+And I wouldn't care because, in its current state—very early, without any sponsor or associated paid product—I have already generated more benefits than I ever imagined thanks to this project.
+
+After reading the README and some code of OpinionatedFramework, Alejandro, the Tech Lead of [Dualimind](https://www.dualimind.com/), told his partner that she liked it and then they offered me a job.
+
+**The marketing that the project did for me is its greatest benefit**.
+
+## How this is reflected in the license
+
+The business is not the usage, but maximizing visibility and attribution. This doesn’t mean usage-based business models are wrong—only that they are not the business I’m building here.
+
+Due this business model, I want the framework to be used without restrictions (that does not mean without responsibility; the user is responsible for what they do).
+
+That's the reason I chose the [BSD 2-Clause license](https://opensource.org/license/bsd-2-clause/) for the OpinionatedFramework project. This license allows it to be used without restriction, with or without modifications and with or without relicensing. The only condition is that redistributions should contain the copyright notice that recognizes me as the author, ensuring that I maintain that recognition and that the marketing of my person remains available.
+
+The same applies to the blog posts and documentation I write. I use the CC BY 4.0 license, which allows the text to be used without restriction, adapted, quoted, used for training, or relicensed with the only condition of attributing my person.
