@@ -1,0 +1,146 @@
+---
+title: "Introducing OpinionatedArch"
+slug: opinionated-arch
+author: montyclt
+publishDate: 2026-05-11
+license: CC BY 4.0
+discussionId: 64
+tags:
+ - iokode
+ - opinionated-arch
+---
+
+**OpinionatedArch** is an Arch-based distribution for one physical person who wants multiple work contexts without maintaining different system configurations for each user account. It combines separate login users, shared versioned dotfiles, automatic snapshots, and explicit recovery tools into one opinionated operating model.
+
+## Status
+
+OpinionatedArch is in a very early stage.
+
+I started working on it some months ago, but I [do not have much time to dedicate to side projects](https://iokode.blog/posts/commitment). Last weekend I had some free time to return to it, clean up part of the work, and bring the project to a minimum viable state where it makes sense to introduce the idea publicly.
+
+That does not mean the system is finished, stable, or ready for general use. It means the core direction is clear enough to explain: the project has a defined operating model, a disk layout direction, early tooling, and enough documentation to show what it is trying to become.
+
+I am also not abandoning [OpinionatedFramework](https://github.com/iokode/OpinionatedFramework) in favor of OpinionatedArch. The relationship is different: OpinionatedArch exists partly because I want a development environment, including the operating system itself, where I feel comfortable working on my other projects.
+
+The expected development cycle will probably be irregular. This is not a product with a fixed roadmap or release cadence. I will work on it when I have time, usually by improving the parts that directly affect my own machine first: installer behavior, recovery tooling, snapshot workflows, dotfiles management, and documentation.
+
+## One Person, Multiple Contexts
+
+The central idea is simple: the system belongs to one physical person, but that person may work through multiple login users.
+
+Those login users are not security boundaries between different humans. They are work-context boundaries. They isolate sessions, browser state, application data, and user files, while still sharing the same baseline system policy and configuration.
+
+The project started from a practical problem: I do not want one Linux user account for everything, but I also do not want every account to become a *separate machine* inside the same machine.
+
+Different contexts are useful. A personal account, a client account, a work account, and an experimental account can each have their own browser sessions, application state, caches, and home data. That separation is valuable. But if every account uses its own configuration, its own dotfiles, its own setup scripts, and its own maintenance routine, the cost of separation grows quickly.
+
+That idea inspires many design decisions that are documented in the [GitHub repository](https://github.com/iokode/OpinionatedArch).
+
+
+## Shared Dotfiles Without a Primary User
+
+Most dotfiles setups assume one primary home directory, locating them in `~/dotfiles` or similar directory. When there are several login accounts that should all consume the same configuration, one of them becomes the *primary* account that owns the dotfiles.
+
+OpinionatedArch puts active shared configuration at `/dotfiles`, outside every user home and in its own `@dotfiles` BTRFS subvolume. Runtime links can then point every intended login user, and selected system paths under `/etc`, at the same source of truth.
+
+This avoids making one user account special. No account owns the configuration model. The configuration belongs to the `root` user and is shared through group permissions. The login accounts belong to a special `dotfiles` group that can read and write the `/dotfiles` directory.
+
+## A Pre-Boot Return Message
+
+One unusual feature is the optional pre-boot ownership and return message.
+
+When enabled, the disk-unlock screen can show contact information before the operating system starts. The installer can render the message in selected language templates and optionally include a owner's logo. This is public by design: if the machine is lost, a finder can see how to return it without needing access to the OS.
+
+This screenshot is an example from a [company located in Andorra](https://dualimind.com), in the four languages commonly used in this small country.
+
+## Full Disk Layout
+
+OpinionatedArch is designed to be installed on the whole target disk. Installing in a partition sharing disk with other OSes is not supported. If you install other OSes in other disks, the bootloader detects it and adds an entry to boot them from the other disks.
+
+That all-disk model exists because OpinionatedArch has multiple partitions:
+
+- a FAT32 boot partition for EFI boot files, the kernel and the [Plymouth](https://wiki.archlinux.org/title/Plymouth) theme with the pre-boot ownership message.
+- an EXT4 recovery-system partition
+- an encrypted swap partition using an ephemeral boot-time key ([maybe I'll change it by a swapfile](https://chatgpt.com/share/6a023ce9-7df8-838a-9e52-1c83a80965d6))
+- an encrypted LUKS2 main-system partition containing Btrfs
+
+Encryption is mandatory. There is no installer toggle to disable it. The boot partition remains unencrypted because UEFI needs to read boot artifacts before root unlock, and hibernation is not supported because swap uses an ephemeral key.
+
+This is a trade-off-heavy project, and the trade-offs are documented rather than hidden. The full-disk model is strict, but it keeps installation, recovery, and rollback expectations easier to reason about.
+
+### Btrfs Layout
+
+Inside the encrypted main-system partition, OpinionatedArch uses Btrfs as the fixed filesystem model. The layout is not open-ended and does not try to support every partitioning preference.
+
+The system uses:
+
+- `@` for system state
+- `@home-<login-user>` for each login user's home
+- `@log` for logs
+- `@pkg` for Pacman cache
+- `@snapshots` for snapshot storage
+
+*Note that layout is in very early decision stage and will probably change.*
+
+Per-user home subvolumes are important because snapshots happen at subvolume boundaries. If every home lived inside one shared `@home`, restoring one context could accidentally roll back another. OpinionatedArch avoids that by giving every login user a separate rollback scope.
+
+## Automatic Checkpoints
+
+The snapshot policy is designed around the moments when breakage usually happens.
+
+System snapshots are created:
+
+- at boot start
+- on package installation or update transactions
+- on explicit manual request
+
+User snapshots are created:
+
+- at login start for that specific user
+- on explicit manual request
+
+Automatic snapshots are kept with bounded retention. Manual snapshots are never auto-purged and must include a human-readable justification, because long-lived recovery points should be understandable later.
+
+The snapshots cannot be booted from the bootloader, avoiding problems caused by forking the filesystem and making changes inside a snapshot. But there is an entry to load a recovery system with easy-to-use TUIs to find and restore snapshots.
+
+## Opinionated Means Fewer Branches
+
+OpinionatedArch deliberately chooses a small set of defaults. Some fundamental components like the kernel, the audio system, the network stack or bootloader are pre-installed and pre-configured. You don't need to do the typical Arch's boring ritual of installing those fundamental components.
+
+The point is not that these choices are universal. They are not. The point is saving time deciding about those fundamental components.
+
+## What OpinionatedArch Does Not Decide
+
+OpinionatedArch does not impose a desktop environment, window manager, shell workflow, or general usage experience. The project is opinionated about the operating model, disk layout, encryption, recovery, snapshots, dotfiles, and maintenance invariants, but not about how the user should interact with the machine day to day.
+
+A graphical desktop, a tiling Wayland setup, a TUI-heavy workflow, or a mostly terminal-based environment should all fit as long as they respect the system model.
+
+## The `oparch` Tooling Direction
+
+The project includes a direction for small operational tools with one purpose each.
+
+Examples include:
+
+- `oparch-user-create` for adding login users with the correct groups, home subvolume, and ownership
+- `oparch-user-remove` for removing users without leaving stale subvolumes or mount state
+- `oparch-password-rotate` for keeping the shared LUKS and login secret synchronized
+- `oparch-dotfiles-link` for refreshing links from `/dotfiles`
+- `oparch-snapshot-system-create` and `oparch-snapshot-user-create` for manual checkpoints
+- `oparch-snapshot-restore` for explicit restore workflows
+- `oparch-network-manager` TUI for easily connecting to networks, both wired and wireless, from non-desktop recovery environment
+
+These tools matter because the model has invariants. A login user is not just a Unix account. It also needs a home subvolume, snapshot paths, group membership, and consistent recovery behavior. Password change should apply for both LUKS2 encryption and for all login accounts. Dedicated commands keep those rules from becoming tribal knowledge.
+
+## Documentation as Part of the System
+
+OpinionatedArch is not only scripts. The repository contains decision documents explaining the reason behind each major policy.
+
+That is important because opinionated systems can otherwise become arbitrary systems. If a decision is strict, the project should say why it is strict. If a feature is deferred, the project should say why it is deferred. If a trade-off is accepted, the project should make that acceptance visible.
+
+The documentation is part of the design, not decoration.
+
+## Who This Is For
+
+It is for someone who wants separate work contexts without separate configuration universes. It is for someone who wants dotfiles to be versioned and shared cleanly. It is for someone who wants snapshots and recovery to be designed before disaster, not improvised after it.
+
+It is not for someone who wants a general-purpose installer with many choices. It is not for multi-person account separation. It is not trying to be neutral.
