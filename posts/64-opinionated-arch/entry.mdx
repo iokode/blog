@@ -32,7 +32,7 @@ Those login users are not security boundaries between different humans. They are
 
 The project started from a practical problem: I do not want one Linux user account for everything, but I also do not want every account to become a *separate machine* inside the same machine.
 
-Different contexts are useful. A personal account, a client account, a work account, and an experimental account can each have their own browser sessions, application state, caches, and home data. That separation is valuable. But if every account uses its own configuration, its own dotfiles, its own setup scripts, and its own maintenance routine, the cost of separation grows quickly.
+Different contexts are useful. A personal account, a client account, and a work account. Each account can each have their own browser sessions, application state, caches, and home data. That separation is valuable. But if every account uses its own configuration, its own dotfiles, its own setup scripts, and its own maintenance routine, the cost of separation grows quickly.
 
 That idea inspires many design decisions that are documented in the [GitHub repository](https://github.com/iokode/OpinionatedArch).
 
@@ -44,6 +44,7 @@ Most dotfiles setups assume one primary home directory, locating them in `~/dotf
 OpinionatedArch puts active shared configuration at `/dotfiles`, outside every user home and in its own `@dotfiles` BTRFS subvolume. Runtime links can then point every intended login user, and selected system paths under `/etc`, at the same source of truth.
 
 This avoids making one user account special. No account owns the configuration model. The configuration belongs to the `root` user and is shared through group permissions. The login accounts belong to a special `dotfiles` group that can read and write the `/dotfiles` directory.
+
 
 ## A Pre-Boot Return Message
 
@@ -57,9 +58,10 @@ Those screenshots are examples from [Dualimind](https://www.dualimind.com) and [
 
 ![Screenshot with returning message in two languages](/posts/assets/opinionated-arch/return-message-vadavo.png)
 
+
 ## Full Disk Layout
 
-OpinionatedArch is designed to be installed on the whole target disk. Installing in a partition sharing disk with other OSes is not supported. If you install other OSes in other disks, the bootloader detects it and adds an entry to boot them from the other disks.
+OpinionatedArch is designed to be installed on the whole target disk. Installing in a partition sharing disk with other OSes is not supported. If you install other OSes in other disks, you can add entries for booting in the bootloader without problem.
 
 That all-disk model exists because OpinionatedArch has multiple partitions:
 
@@ -71,6 +73,13 @@ That all-disk model exists because OpinionatedArch has multiple partitions:
 Encryption is mandatory. There is no installer toggle to disable it. The boot partition remains unencrypted because UEFI needs to read boot artifacts before root unlock, and hibernation is not supported because swap uses an ephemeral key.
 
 This is a trade-off-heavy project, and the trade-offs are documented rather than hidden. The full-disk model is strict, but it keeps installation, recovery, and rollback expectations easier to reason about.
+
+<Alert severity="info">
+UPDATED 2026-05-15: At this point, the number of partitions [has been reduced to two](https://github.com/iokode/OpinionatedArch/blob/master/docs/004-disk-layout.md): the ESP partition and a main BTRFS partition. Swap and the recovery system were moved to BTRFS subvolumes, so I am considering allowing installation into an existing partition without requiring the whole disk. In any case, writing an installer that supports installation into an existing partition is not trivial, so it will probably never be supported.
+
+
+</Alert>
+
 
 ### Btrfs Layout
 
@@ -84,13 +93,18 @@ The system uses:
 - `@pkg` for Pacman cache
 - `@snapshots` for snapshot storage
 
-*Note that layout is in very early decision stage and will probably change.*
+<Alert severity="info">
+Update 2026-05-15: The BTRFS layout has been redesigned. The new layout is defined [in the documentation](https://github.com/iokode/OpinionatedArch/blob/master/docs/004-disk-layout.md).
+
+
+</Alert>
 
 Per-user home subvolumes are important because snapshots happen at subvolume boundaries. If every home lived inside one shared `@home`, restoring one context could accidentally roll back another. OpinionatedArch avoids that by giving every login user a separate rollback scope.
 
+
 ## Automatic Checkpoints
 
-The snapshot policy is designed around the moments when breakage usually happens.
+The snapshot policy is designed around obvious human restore points. If something breaks during today's work session, restoring to the snapshot taken before booting the system should be an intuitive recovery point.
 
 System snapshots are created:
 
@@ -107,17 +121,20 @@ Automatic snapshots are kept with bounded retention. Manual snapshots are never 
 
 The snapshots cannot be booted from the bootloader, avoiding problems caused by forking the filesystem and making changes inside a snapshot. But there is an entry to load a recovery system with easy-to-use TUIs to find and restore snapshots.
 
+
 ## Opinionated Means Fewer Branches
 
-OpinionatedArch deliberately chooses a small set of defaults. Some fundamental components like the kernel, the audio system, the network stack or bootloader are pre-installed and pre-configured. You don't need to do the typical Arch's boring ritual of installing those fundamental components.
+OpinionatedArch deliberately chooses a small set of defaults. Some fundamental components like the kernel, the audio system, the network stack or bootloader are pre-installed and pre-configured. You don't need to do the typical *Arch's boring ritual* of installing those fundamental components.
 
 The point is not that these choices are universal. They are not. The point is saving time deciding about those fundamental components.
+
 
 ## What OpinionatedArch Does Not Decide
 
 OpinionatedArch does not impose a desktop environment, window manager, shell workflow, or general usage experience. The project is opinionated about the operating model, disk layout, encryption, recovery, snapshots, dotfiles, and maintenance invariants, but not about how the user should interact with the machine day to day.
 
 A graphical desktop, a tiling Wayland setup, a TUI-heavy workflow, or a mostly terminal-based environment should all fit as long as they respect the system model.
+
 
 ## The `oparch` Tooling Direction
 
@@ -133,7 +150,8 @@ Examples include:
 - `oparch-snapshot-restore` for explicit restore workflows
 - `oparch-network-manager` TUI for easily connecting to networks, both wired and wireless, from non-desktop recovery environment
 
-These tools matter because the model has invariants. A login user is not just a Unix account. It also needs a home subvolume, snapshot paths, group membership, and consistent recovery behavior. Password change should apply for both LUKS2 encryption and for all login accounts. Dedicated commands keep those rules from becoming tribal knowledge.
+These tools matter because the model has invariants. A login user is not just a Unix account. It also needs a home subvolume, snapshot paths, group membership, and consistent recovery behavior. Password change should apply for both LUKS2 encryption and for all login accounts. Dedicated tools keep those rules from becoming tribal knowledge.
+
 
 ## Documentation as Part of the System
 
@@ -142,9 +160,3 @@ OpinionatedArch is not only scripts. The repository contains decision documents 
 That is important because opinionated systems can otherwise become arbitrary systems. If a decision is strict, the project should say why it is strict. If a feature is deferred, the project should say why it is deferred. If a trade-off is accepted, the project should make that acceptance visible.
 
 The documentation is part of the design, not decoration.
-
-## Who This Is For
-
-It is for someone who wants separate work contexts without separate configuration universes. It is for someone who wants dotfiles to be versioned and shared cleanly. It is for someone who wants snapshots and recovery to be designed before disaster, not improvised after it.
-
-It is not for someone who wants a general-purpose installer with many choices. It is not for multi-person account separation. It is not trying to be neutral.
