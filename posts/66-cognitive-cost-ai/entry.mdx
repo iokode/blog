@@ -1,0 +1,43 @@
+---
+title: "Cognitive cost of AI coding"
+slug: cognitive-cost-ai
+author: montyclt
+publishDate: 2026-07-06
+license: CC BY 4.0
+discussionId: 66
+tags:
+- ai
+- psychology
+---
+
+I'm a big fan of LLMs and generative AI in general. I use them every day for coding.
+
+[It started in 2022, when I used ChatGPT to help me code in a language I didn't know](https://iokode.blog/posts/la-inteligencia-artificial-en-el-ambito-de-la-programacion/), and it has evolved up to the current harnesses like OpenCode, Claude Code or Codex.
+
+## The cognitive training problem
+
+Marina Sundström [wrote on LinkedIn](https://www.linkedin.com/feed/update/urn:li:activity:7459611332963717121/) that she was using AI for her project and she was worried that "AI can ruin the stimulating parts of professional software development if everything gets automated without thought or discussion."
+
+I agree with her because I'm noticing in myself how I automatically go to the "plan mode" of the harness without thinking about the problem. Only when I see that the harness cannot plan a good solution to the problem do I start thinking about it.
+
+A good example where I have done this many times is the OpinionatedFramework project. It is a framework with a lot of "strange" API decisions ([like preferring static facades over dependency injection](https://blog.koalite.com/2019/02/clases-estaticas-como-alternativa-a-inyeccion-de-dependencias/)) that LLMs tend to avoid, proposing other, "more probable" solutions instead. And for me, it is a good way to keep training my brain. But outside of those strange projects, in most typical applications, I let the LLM plan by itself.
+
+In [a podcast interview with Nate Gentile, at minute 30:50, he made an interesting prediction](https://youtu.be/7QkQ8NYXZ1E?t=1850). He said that our grandparents didn't need gyms because their manual jobs required them to exercise. Now, our current jobs don't require exercise, and we compensate for it with "artificial" training in gyms. He predicted that when we automate all our intelligence, we will use "mental gyms" to train the mind. An "artificial" mind training.
+
+## The focus problem
+
+In my first real job, I worked in a big Spanish software lab with a lot of projects using different tech stacks. The office was organized by tables, and each table worked on the same project.
+
+Our table neighbours were working on a project whose build took about five to twenty minutes, and I remember a conversation with one of the team members. He was working on frontend changes and needed to wait all that time to see the changes, with no hot reload. He was worried because, when the build finished, he didn't remember what he had been working on because he had got distracted.
+
+That problem was fixed with modern and fast compilers ([except in Rust 🤭](https://kobzol.github.io/rust/rustc/2025/06/09/why-doesnt-rust-care-more-about-compiler-performance.html)), hot-reload techniques, etc. I'm able to "enter hyperfocus" mode during my work sessions without many problems. But when working with modern harnesses, they can take multiple minutes or even hours to complete a task, so while the harness is working, I get distracted on Twitter, Reddit or YouTube and lose concentration. When the harness finishes, I don't remember what the task was, and I need to waste time remembering it.
+
+That is probably the most mentally expensive cost I need to afford when working with AI, to the point that **I'm addressing it directly with a clinical psychologist**.
+
+## Conclusions
+
+Aware of these cognitive costs, I ask myself: "is AI really improving my productivity?" The answer is yes, to the point that [the productivity boost helped me get a job in Andorra](https://x.com/Montyclt/status/2013639564191994108). But I also notice that the productivity boost isn't free, as it drains my mental health.
+
+I think the focus problem will be mitigated in the future with fast models that generate thousands of tokens per second, where the agent loop will be reduced from the current minutes to just a few seconds.
+
+About the non-training problem, that is more personal, but it could be mitigated by thinking about the project details, reviewing all the code and [understanding what happens under the hood](https://x.com/Montyclt/status/1732314334871597417).
