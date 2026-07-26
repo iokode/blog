@@ -1,0 +1,215 @@
+---
+title: "Dotfiles in OpinionatedArch"
+slug: opinionated-arch-dotfiles
+author: montyclt
+publishDate: 2026-07-27
+license: CC BY 4.0
+discussionId: 67
+tags:
+  - opinionated-arch
+series: "Introducing OpinionatedArch"
+---
+
+If you have read [Introducing OpinionatedArch](https://iokode.blog/posts/opinionated-arch/), you already know the core idea: one physical person, several login accounts used as separate work contexts, and a single shared configuration that lives in `/dotfiles`, outside every home directory.
+
+What that post did not explain is *how* that shared configuration reaches each account, because when I wrote it the dotfiles synchronization tool had not been specified yet. Today, [I published the specification](https://github.com/iokode/OpinionatedArch/blob/master/docs/003-dotfiles-sync.md).
+
+The short version is that `/dotfiles` is a Git repository, and a single file inside it, `/dotfiles/main.dfmap`, declares everything the system should do with that configuration. A command called `oparch-dotfiles-sync` reads the map and makes the machine match it.
+
+<Alert severity="info">
+    This is a design post. `oparch-dotfiles-sync` is still being implemented, so treat the syntax here as the intended shape rather than a finished, shipping tool.
+
+
+</Alert>
+
+## Why a Map Instead of a Script
+
+The obvious way to sync dotfiles is a shell script. I did start there: a script that created symlinks. It worked, but it quietly grew responsibilities. Some files cannot be symlinks. Some configuration needs a different value per account. A shell script can do all of that, but the moment it does, my "configuration" becomes a program, and I can no longer look at it and easily know what it will do.
+
+The map is a small declarative language — not a shell file. Everything it describes can be validated as a complete plan *before* a single file on disk changes. If the map is wrong, synchronization refuses to start instead of discovering the problem halfway through. That constraint is the whole point, and most of the design follows from it.
+
+## An Example of Map
+
+Here is a small but complete map. Everything after this section just explains its pieces.
+
+```text
+oparch dotfiles map
+version = '0.1'
+
+include 'common.dfmap'
+include 'hosts/ana.dfmap'   for host 'ana'
+include 'hosts/lucia.dfmap' for host 'lucia'
+
+[packages]
+hyprland
+uwsm
+nvidia-open   for host 'ana'
+brightnessctl for host 'lucia'
+
+[aur-packages]
+opencode
+
+[values.git]
+default_branch = 'master'
+email = 'montyclt@example.com'
+email = 'ivan@iokode.net' for user 'iokode'
+
+[values.github]
+account = 'montyclt'
+
+[secrets.github]
+token
+
+[secrets.youtrack]
+username with scope 'user'
+token with scope 'user'
+
+[dotfiles.hypr]
+link 'hypr/keybindings.lua'    to '&HOME/.config/hypr/keybindings.lua'
+link 'hypr/monitors_ana.lua'   to '&HOME/.config/hypr/monitors.lua'   for host 'ana'
+link 'hypr/monitors_lucia.lua' to '&HOME/.config/hypr/monitors.lua'   for host 'lucia'
+
+link 'hypr/animations.lua' to '&HOME/.config/hypr/animations.lua' except host 'lucia'
+
+[dotfiles.opencode]
+link 'opencode/agent/' to '&HOME/.config/opencode/agent/'
+render 'opencode/mcp/github.conf.tpl' + 'opencode/mcp/youtrack.conf.tpl' to '&HOME/.config/opencode/mcp.conf' with mode '0600'
+```
+
+<Alert severity="info">
+    **Context note**: [I name all my devices with women's names](https://x.com/mariposa_pisti/status/1796461600561619378). Ana is my desktop computer and Lucia is my laptop.
+
+
+</Alert>
+
+## Includes
+
+A repository-level map should stay small. Includes let the top-level file act as an index while the real rules live in focused files:
+
+```text
+include 'common.dfmap'
+include 'hosts/ana.dfmap' for host 'ana'
+include 'users/work.dfmap' for user 'work'
+```
+
+Includes only *assemble* one logical map. They do not introduce override or precedence: there is no "this file wins" behavior. Paths are relative to the file that contains the include, cannot escape the dotfiles directory, and cycles are rejected.
+
+## Packages
+
+Two sections declare packages: those from the official repositories go in `[packages]`, and those from the AUR go in `[aur-packages]`:
+
+```text
+[packages]
+hyprland
+uwsm
+nvidia-open   for host 'ana'
+brightnessctl for host 'lucia'
+
+[aur-packages]
+opencode
+```
+
+Missing packages are installed, already-installed packages are left alone, and removing a line from the map does **not** uninstall anything. The system can contain baseline or manually installed packages the map never mentions, so the map does not claim to own the package set.
+
+## The Three Operations: Link, Copy, Render
+
+Every rule in a `[dotfiles.<category>]` section defines an operation.
+
+**`link`** creates a direct symlink. Editing the target edits the source under `/dotfiles`, which is exactly what you want for configuration you actively tweak. A directory source links every file underneath it, preserving structure:
+
+```text
+link 'hypr/keybindings.lua' to '&HOME/.config/hypr/keybindings.lua'
+link 'opencode/agent/'      to '&HOME/.config/opencode/agent/'
+```
+
+**`copy`** creates a copy. This exists for targets that *cannot* consume a link — most importantly the files in the EFI partition.
+
+```text
+copy 'grub/' to '/boot/'
+```
+
+**`render`** treats its sources as templates, concatenates them in order, substitutes placeholders, and writes one output. Edits to a rendered file are not versioned and get overwritten on the next sync, because the file is a generated artifact:
+
+```text
+render 'opencode/mcp/github.conf.tpl' + 'opencode/mcp/youtrack.conf.tpl' to '&HOME/.config/opencode/mcp.conf' with mode '0600'
+```
+
+That `+` is the composition feature. Plenty of applications can only load a single config file, yet the config itself is large and worth splitting into versioned fragments. Render lets me keep the fragments separate in Git and hand the application one assembled file.
+
+Copies and rendered outputs are read-only by default, mode `0440`, and `with mode` overrides it. The example above uses `0600`.
+
+## Paths, Placeholders, and Who Owns What
+
+Sources are relative to `/dotfiles`. Targets must resolve to absolute paths. Three placeholders bridge the shared repository and the specific context it is applied in:
+
+- `&USER` — the current login username
+- `&HOME` — that user's home directory
+- `&HOST` — the current `/etc/hostname`
+
+A target that contains `&HOME` or `&USER` is a **user target**: it is expanded once for every member of the `dotfiles` group, and each expansion is owned by that user and their own private group. A target with neither is **global** and applies once, owned by `root`. This is why `link 'hypr/…' to '&HOME/.config/hypr/…'` reaches every account without me naming any of them.
+
+## Values, Secrets, and Templates
+
+Sometimes config files need data. When using `render`, the tool treats the source file as a template and generates the output by replacing placeholders with data. There are three types of placeholders:
+
+**Built-ins** carry essential information like the target user or the hostname. The complete list is in the specification.
+
+**Values** are non-secret and versioned.
+
+```text
+[values.git]
+email = 'montyclt@example.com'
+email = 'ivan@iokode.net' for user 'iokode'
+```
+
+In this example, `git.email` is `ivan@iokode.net` on the `iokode` account and `montyclt@example.com` everywhere else.
+
+**Secrets** work the same way, except that the map only *declares* that one is required, never the value itself. That is what lets the dotfiles repository be public: the values live outside Git.
+
+```text
+[secrets.youtrack]
+username with scope 'user'
+token with scope 'user'
+
+[secrets.github]
+token
+```
+
+A secret is global by default, one value shared by the whole machine. The option `with scope 'user'` makes it per login user, which is what I need for YouTrack: every company I work for has its own instance, so each login user needs its own username and token. The GitHub token has no scope, because I use the same GitHub account in every context.
+
+Values and secrets are referenced the same way, by their full `<category>.<key>` name inside `{{...}}`:
+
+```text
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "github": {
+      "enabled": true,
+      "type": "remote",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "oauth": false,
+      "headers": {
+        "Authorization": "Bearer {{github.token}}"
+      }
+    },
+```
+
+This is only **a fragment**. It consumes a secret and it does not close the composition; `youtrack.conf.tpl` does.
+
+## Selectors
+
+Selectors are filters. They come in two forms. `for` restricts an entry to what it names: in the example map, `for user 'iokode'` is what gives that one account a different Git email. `except` is a veto: the animations rule in the example map ends with `except host 'lucia'`, so it applies everywhere but my laptop, which is not powerful enough to run animations comfortably. The veto form is shorter than enumerating every host that should have animations, and it needs no editing when a new machine appears.
+
+There are two dimensions, `user` and `host`, and they filter almost every kind of entry: on `link`, `copy` and `render` rules, on packages, and on value definitions.
+
+A selector on an include is inherited by every entry in the included file, so `include 'hosts/ana.dfmap' for host 'ana'` means "everything in `ana.dfmap` applies only on host `ana`" without repeating it line by line. A selector on a `[dotfiles.<category>]` header behaves the same way: every rule under that header inherits it.
+
+Packages accept host selectors — `nvidia-open` only on the machine that has an Nvidia card — but not user selectors, because packages are system-wide and a login account is not a place to install software.
+
+## Closing Thought
+
+None of this is trying to be a general-purpose dotfiles engine. Those already exist, and [chezmoi](https://www.chezmoi.io/) is the obvious one.
+
+This is built for one specific model instead: the one OpinionatedArch defines, where `/dotfiles` belongs to no user, and where the same source of truth has to reach several home directories and system paths such as `/etc`.
+
+If you want the exact rules rather than the tour, [the full design lives in the OpinionatedArch repository](https://github.com/iokode/OpinionatedArch/blob/master/docs/003-dotfiles-sync.md).
