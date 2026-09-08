@@ -1,0 +1,37 @@
+---
+title: "The psychology of OpinionatedArch"
+slug: opinionated-arch-psychology
+author: montyclt
+publishDate: 2026-09-08
+license: CC BY 4.0
+discussionId: 68
+tags:
+  - opinionated-arch
+series: "Introducing OpinionatedArch"
+---
+
+# The psychology of OpinionatedArch
+
+I have severe ADHD and other mental disorders, which leads me to get distracted while I work, especially on Twitter and YouTube.
+
+## The seat session as a barrier
+
+Trying to [regulate that](https://www.mertxepasamontes.com/tdah-no-son-trucos-es-regulacion/), my clinical psychologist suggested setting physical barriers that prevent me from entering these sites while I'm working.
+
+That is one of the reasons I'm creating OpinionatedArch. The idea: while I'm working, I cannot switch to Twitter, because my company work-contexts don't have the Twitter account logged in. Switching to the personal work-context means changing the seat session, and that is friction, because changing the seat session means dropping devices and waiting a few seconds.
+
+## AI changed that objective
+
+An agent takes time to do its work, sometimes more than an hour, and that leads me to [the focus problem](https://iokode.blog/posts/cognitive-cost-ai/). The way to go is [parallelizing agents](https://x.com/antoniosarosi/status/2076821875523514763), so while one agent works I can instruct another one, sometimes in a different work-context of OpinionatedArch. That means I need to switch between work-contexts fast, so I can no longer afford to change the seat session.
+
+The solution I'm working on is running the compositor as a logical user like `desktop`, instead of one compositor instance per user, and handling work-context switching internally, running each application with the uid of the work-context user.
+
+That invalidates the distraction-fix, because switching work-contexts is now fast. But if I hadn't gone in that direction, the distraction would show up anyway: while I wait for an agent to finish, I go to Twitter on my phone.
+
+## OpinionatedArch supports both models
+
+I [wrote before](https://iokode.blog/posts/opinionated-arch/) that OpinionatedArch is opinionated about the operating model, but not about how you interact with the machine day to day. This is the first real test of that claim.
+
+The two models I've described don't just differ in taste. The first one needs switching work-contexts to be expensive, and gets that from the seat session. The second one needs it to be free, and gets that from a single compositor that never releases the seat.
+
+Both models could be expressed entirely as dotfiles: one package that adds friction to switching work-contexts, and another one that manages the compositor without switching sessions.
