@@ -1,0 +1,144 @@
+---
+title: "OpinionatedFramework and MyServiceBus"
+slug: myservicebus-driver
+author: montyclt
+publishDate: 2026-10-06
+license: CC BY 4.0
+discussionId: 69
+tags:
+  - opinionated-framework
+  - dotnet
+---
+
+# OpinionatedFramework and MyServiceBus
+
+[Marina Sundström](https://github.com/marinasundstrom) is the author of [MyServiceBus](https://github.com/marinasundstrom/MyServiceBus) and she asked me for my opinion on her project. After a few days playing with it, I noticed it would fit well as a driver for [OpinionatedFramework](https://github.com/iokode/OpinionatedFramework) and [I integrated it](https://www.nuget.org/packages/IOKode.OpinionatedFramework.ContractImplementations.MyServiceBus).
+
+## What OpinionatedFramework is
+
+I wrote about OpinionatedFramework [back when my blog was in Spanish](https://iokode.blog/posts/este-framework-tiene-opinion/), about the early versions, while I was still designing it. Some of those posts no longer apply, because the design changed, and I have not written a dedicated post about it in English yet. This section is only the context this post needs.
+
+OpinionatedFramework is a .NET framework for the application/domain layer. Its premise is that the application layer depends on *contracts* and never on infrastructure: the contracts live in one package, each implementation of a contract lives in its own package, and which implementation is used is decided in configuration rather than in code.
+
+An implementation of a contract is called a *driver*, and the whole framework works this way: each contract has its own configuration section, where its driver is selected and configured.
+
+The one for events is `OpinionatedFramework:Events` — in `appsettings.json`, user secrets, environment variables, or anything else behind `IConfiguration`:
+
+```json
+{
+  "OpinionatedFramework": {
+    "Events": {
+      "Driver": "MyServiceBus.RabbitMq",
+      "Host": "localhost",
+      "Port": 5672,
+      "Username": "guest",
+      "Password": "guest"
+    }
+  }
+}
+```
+
+The `Driver` key selects the implementation, and the rest of the section belongs to whichever one was selected: here the broker connection.
+
+A driver can also take configuration in code, in the options callback of `StartAsync`; the MyServiceBus driver uses it for the handlers it runs, the events it may receive, and the execution policy of each handler:
+
+```csharp
+var host = await OpinionatedFrameworkBootstrapping.StartAsync(configuration, options =>
+    options.MyServiceBusEvents(events =>
+    {
+        events.AddEventHandler<OrderSubmitted, SendConfirmationEmail>(policy => policy.Retry(3).Concurrency(4));
+        events.AddEventHandler<ISubscribableEvent, StoreEvent>();
+        events.AddEvent<PartnerPaymentReceived>();
+    }));
+```
+
+## The event system
+
+### Writing an event
+
+An event is plain data, and two things are part of its type.
+
+**Direction.** An event declares what this application does with it: `IPublishableEvent` if it raises it, `ISubscribableEvent` if it reacts to it, and both interfaces when it does both.
+
+**Identity.** `[EventName]` is mandatory on every concrete event. The declared name, not the CLR type, is what identifies the event: an event stored or put on a wire travels under that name, so renaming or moving the class does not change what was stored.
+
+```csharp
+[EventName("shop.order-submitted")]
+public class OrderSubmitted : IPublishableEvent, ISubscribableEvent
+{
+    public required Guid OrderId { get; init; }
+    public required string Customer { get; init; }
+}
+
+// Raised here, handled elsewhere — no handler can be registered for it in this application.
+[EventName("shop.audit-recorded")]
+public class AuditRecorded : IPublishableEvent
+{
+    public required Guid OrderId { get; init; }
+}
+
+// Raised by another application; this one only reacts to it.
+[EventName("payments.partner-payment-received")]
+public class PartnerPaymentReceived : ISubscribableEvent
+{
+    public required Guid OrderId { get; init; }
+}
+```
+
+### Raising an event
+
+```csharp
+var @event = new OrderSubmitted { OrderId = orderId, Customer = "Marina" };
+await @event.DispatchAsync();
+```
+
+`DispatchAsync` is an extension method that resolves an `IEventDispatcher` and dispatches the event through it, so the work still goes through the contract rather than around it.
+
+### Writing a handler
+
+```csharp
+public class SendConfirmationEmail : IEventHandler<OrderSubmitted>
+{
+    public Task HandleAsync(OrderSubmitted @event, CancellationToken cancellationToken)  { /* ... */ }
+}
+```
+
+A handler may also be registered against `ISubscribableEvent` itself, which gives it every event the application subscribes to rather than one type:
+
+```csharp
+public class StoreEvent : IEventHandler<ISubscribableEvent>
+{
+    public Task HandleAsync(ISubscribableEvent @event, CancellationToken cancellationToken) { /* ... */ }
+}
+```
+
+## What the MyServiceBus driver brings
+
+Before this one, the event system had two drivers:
+
+- `InMemory`, the default, is simple, has no dependencies and stays in the process.
+- `Hangfire` brings everything Hangfire has for running work: durable storage of pending work, its own worker pools and queues, its dashboard and its retry handling.
+
+Both share the same wall: the application that raises an event is the application that handles it.
+
+**MyServiceBus is what breaks that wall**, and it makes two things possible:
+
+- **Raising events that nothing here handles.** An application can declare no handler whatsoever and still publish. Whoever reacts is another application — another service, another team, another language — and this one does not know it exists.
+- **Reacting to events that nothing here raises.** A handler is written for an event this application never emits, declared locally as `ISubscribableEvent`, and fed by whoever does emit it.
+
+That capability changed the framework's own design. As long as an event was always raised and handled inside the same application, direction was not a question worth asking: an event was simply an event.
+
+The moment an event could arrive from outside or leave for outside, the two cases stopped being the same thing, and that is why the contract now carries `IPublishableEvent` and `ISubscribableEvent` as separate markers.
+
+## Where it stands
+
+The driver is published and usable, in two packages:
+
+- `IOKode.OpinionatedFramework.ContractImplementations.MyServiceBus` — everything that does not depend on a broker.
+- `IOKode.OpinionatedFramework.ContractImplementations.MyServiceBus.RabbitMq` — the transport, and the `MyServiceBus.RabbitMq` driver it registers.
+
+Referencing the second one is enough, because it brings the first.
+
+RabbitMQ is the only transport for now. MyServiceBus has others, and each one that arrives will be another package of the same shape. What that split buys a consumer is that the handlers and their execution policies are declared in the transport-neutral package, so moving to another transport changes the package you reference and the driver key, and leaves everything you wrote untouched.
+
+At startup the MyServiceBus driver checks that every declared event survives being written and read back.
