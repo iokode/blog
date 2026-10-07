@@ -40,15 +40,17 @@ The one for events is `OpinionatedFramework:Events` — in `appsettings.json`, u
 
 The `Driver` key selects the implementation, and the rest of the section belongs to whichever one was selected: here the broker connection.
 
-A driver can also take configuration in code, in the options callback of `StartAsync`; the MyServiceBus driver uses it for the handlers it runs, the events it may receive, and the execution policy of each handler:
+A driver can also take configuration in code, in the options callback of `StartAsync`. That is where an application declares what it publishes, which handler runs for which event, and the execution policy of each handler, whose shape depends on what the selected driver can apply:
 
 ```csharp
 var host = await OpinionatedFrameworkBootstrapping.StartAsync(configuration, options =>
     options.MyServiceBusEvents(events =>
     {
-        events.AddEventHandler<OrderSubmitted, SendConfirmationEmail>(policy => policy.Retry(3).Concurrency(4));
-        events.AddEventHandler<ISubscribableEvent, StoreEvent>();
-        events.AddEvent<PartnerPaymentReceived>();
+        events.Publishes<OrderSubmitted>();
+        events.Publishes<AuditRecorded>();
+
+        events.Handles<OrderSubmitted, SendConfirmationEmail>(policy => policy.Retry(3).Concurrency(4));
+        events.Handles<PartnerPaymentReceived, StoreEvent>();
     }));
 ```
 
@@ -103,7 +105,7 @@ public class SendConfirmationEmail : IEventHandler<OrderSubmitted>
 }
 ```
 
-A handler may also be registered against `ISubscribableEvent` itself, which gives it every event the application subscribes to rather than one type:
+A handler may also be written against `ISubscribableEvent` rather than one event type, and then it is declared once for each concrete event it should receive:
 
 ```csharp
 public class StoreEvent : IEventHandler<ISubscribableEvent>
